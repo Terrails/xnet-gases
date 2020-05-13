@@ -1,4 +1,4 @@
-package terrails.xnetgasses;
+package terrails.xnetgases;
 
 import mekanism.api.Action;
 import mekanism.api.chemical.gas.GasStack;
@@ -7,8 +7,8 @@ import mekanism.api.chemical.gas.ISidedGasHandler;
 import mekanism.common.capabilities.Capabilities;
 import net.minecraft.util.Direction;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
-import terrails.xnetgasses.gas.GasChannelSettings;
-import terrails.xnetgasses.gas.GasConnectorSettings;
+import terrails.xnetgases.gas.GasChannelSettings;
+import terrails.xnetgases.gas.GasConnectorSettings;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

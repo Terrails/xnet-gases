@@ -18,8 +18,8 @@ def forge_version = "31.1.87"
 def mappings_version = ["snapshot", "20200225-1.15.1"]
 
 version = "1.0.0"
-group = 'terrails.xnetgasses'
-archivesBaseName = "XNetGasses-${minecraft_version}"
+group = 'terrails.xnetgases'
+archivesBaseName = "XNetGases-${minecraft_version}"
 
 sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8'
 
@@ -68,7 +68,7 @@ dependencies {
 jar {
     manifest {
         attributes([
-            "Specification-Title": "xnetgasses",
+            "Specification-Title": "xnetgases",
             "Specification-Version": "1", // We are version 1 of ourselves
             "Implementation-Title": project.name,
             "Implementation-Version": "${version}",

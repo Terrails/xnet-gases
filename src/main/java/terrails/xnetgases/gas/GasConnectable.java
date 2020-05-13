@@ -1,4 +1,4 @@
-package terrails.xnetgasses.gas;
+package terrails.xnetgases.gas;
 
 import mcjty.rftoolsbase.api.xnet.channels.IConnectable;
 import mekanism.api.chemical.gas.IGasHandler;
@@ -6,7 +6,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockReader;
-import terrails.xnetgasses.Utils;
+import terrails.xnetgases.Utils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

@@ -1,4 +1,4 @@
-package terrails.xnetgasses;
+package terrails.xnetgases;
 
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 import com.electronwill.nightconfig.core.io.WritingMode;
@@ -13,15 +13,15 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.loading.FMLPaths;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import terrails.xnetgasses.gas.GasChannelType;
-import terrails.xnetgasses.gas.GasConnectable;
+import terrails.xnetgases.gas.GasChannelType;
+import terrails.xnetgases.gas.GasConnectable;
 
 import java.nio.file.Path;
 
-@Mod(XNetGasses.MOD_ID)
-public class XNetGasses {
+@Mod(XNetGases.MOD_ID)
+public class XNetGases {
 
-    public static final String MOD_ID = "xnetgasses";
+    public static final String MOD_ID = "xnetgases";
     public static final Logger LOGGER = LogManager.getLogger();
 
     public static ForgeConfigSpec.IntValue maxGasRateNormal;
@@ -29,14 +29,14 @@ public class XNetGasses {
 
     private static final ForgeConfigSpec CONFIG_SPEC;
 
-    public XNetGasses() {
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, CONFIG_SPEC, "xnetgasses.toml");
+    public XNetGases() {
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, CONFIG_SPEC, "xnetgases.toml");
         final IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
         bus.addListener(this::setup);
     }
 
     private void setup(final FMLCommonSetupEvent event) {
-        loadConfig(FMLPaths.CONFIGDIR.get().resolve("xnetgasses.toml"));
+        loadConfig(FMLPaths.CONFIGDIR.get().resolve("xnetgases.toml"));
 
         XNet.xNetApi.registerChannelType(new GasChannelType());
         XNet.xNetApi.registerConnectable(new GasConnectable());
@@ -57,7 +57,7 @@ public class XNetGasses {
     }
 
     private static void loadConfig(Path path) {
-        XNetGasses.LOGGER.debug("Loading config file {}", path);
+        XNetGases.LOGGER.debug("Loading config file {}", path);
 
         final CommentedFileConfig configData = CommentedFileConfig.builder(path)
                 .sync()
@@ -65,9 +65,9 @@ public class XNetGasses {
                 .writingMode(WritingMode.REPLACE)
                 .build();
 
-        XNetGasses.LOGGER.debug("Built TOML config for {}", path.toString());
+        XNetGases.LOGGER.debug("Built TOML config for {}", path.toString());
         configData.load();
-        XNetGasses.LOGGER.debug("Loaded TOML config for {}", path.toString());
+        XNetGases.LOGGER.debug("Loaded TOML config for {}", path.toString());
         CONFIG_SPEC.setConfig(configData);
     }
 }

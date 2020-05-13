@@ -1,4 +1,4 @@
-package terrails.xnetgasses.gas;
+package terrails.xnetgases.gas;
 
 import mcjty.rftoolsbase.api.xnet.channels.IChannelSettings;
 import mcjty.rftoolsbase.api.xnet.channels.IChannelType;
@@ -6,7 +6,7 @@ import mcjty.rftoolsbase.api.xnet.channels.IConnectorSettings;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import terrails.xnetgasses.Utils;
+import terrails.xnetgases.Utils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

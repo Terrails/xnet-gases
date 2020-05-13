@@ -1,4 +1,4 @@
-package terrails.xnetgasses.gas;
+package terrails.xnetgases.gas;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
@@ -21,7 +21,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.apache.commons.lang3.tuple.Pair;
-import terrails.xnetgasses.Utils;
+import terrails.xnetgases.Utils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

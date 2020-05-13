@@ -1,4 +1,4 @@
-package terrails.xnetgasses.gas;
+package terrails.xnetgases.gas;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.JsonObject;
@@ -16,8 +16,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.Direction;
 import net.minecraft.util.ResourceLocation;
-import terrails.xnetgasses.Utils;
-import terrails.xnetgasses.XNetGasses;
+import terrails.xnetgases.Utils;
+import terrails.xnetgases.XNetGases;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -68,7 +68,7 @@ public class GasConnectorSettings extends AbstractConnectorSettings {
 
     @Nonnull
     public Integer getRate() {
-        return rate == null ? XNetGasses.maxGasRateNormal.get() : rate;
+        return rate == null ? XNetGases.maxGasRateNormal.get() : rate;
     }
 
     @Nullable
@@ -101,10 +101,10 @@ public class GasConnectorSettings extends AbstractConnectorSettings {
         int maxRate;
         if (advanced) {
             speeds = new String[] { "10", "20", "60", "100", "200" };
-            maxRate = XNetGasses.maxGasRateAdvanced.get();
+            maxRate = XNetGases.maxGasRateAdvanced.get();
         } else {
             speeds = new String[] { "20", "60", "100", "200" };
-            maxRate = XNetGasses.maxGasRateNormal.get();
+            maxRate = XNetGases.maxGasRateNormal.get();
         }
 
         sideGui(gui);
@@ -185,7 +185,7 @@ public class GasConnectorSettings extends AbstractConnectorSettings {
         if (!filter.isEmpty()) {
             object.add("filter", JSonTools.itemStackToJson(filter));
         }
-        if (rate != null && rate > XNetGasses.maxGasRateNormal.get()) {
+        if (rate != null && rate > XNetGases.maxGasRateNormal.get()) {
             object.add("advancedneeded", new JsonPrimitive(true));
         }
         if (speed == 1) {
