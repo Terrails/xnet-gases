@@ -3,33 +3,29 @@ buildscript {
         maven { url = 'https://files.minecraftforge.net/maven' }
         jcenter()
         mavenCentral()
-        maven { url = 'https://plugins.gradle.org/m2'}
     }
     dependencies {
         classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '3.+', changing: true
-        classpath group: 'com.wynprice.cursemaven', name: 'CurseMaven', version: '2.1.4'
     }
 }
 apply plugin: 'net.minecraftforge.gradle'
-apply plugin: 'com.wynprice.cursemaven'
 
-def minecraft_version = "1.15.2"
-def forge_version = "31.1.87"
-def mappings_version = ["snapshot", "20200225-1.15.1"]
+def minecraft_version = "1.16.3"
+def forge_version = "34.1.15"
+def mappings_version = ["snapshot", "20200514-1.16"]
 
-version = "1.0.0"
+version = "2.0.0"
 group = 'terrails.xnetgases'
 archivesBaseName = "XNetGases-${minecraft_version}"
 
 sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8'
 
 minecraft {
-    mappings channel: 'snapshot', version: '20200225-1.15.1'
+    mappings channel: mappings_version[0], version: mappings_version[1]
 
     runs {
         client {
             workingDirectory project.file('run')
-         //   property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
             property 'forge.logging.console.level', 'debug'
 
             mods {
@@ -41,7 +37,6 @@ minecraft {
 
         server {
             workingDirectory project.file('run')
-         //   property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
             property 'forge.logging.console.level', 'debug'
 
             mods {
@@ -53,16 +48,22 @@ minecraft {
     }
 }
 
+repositories {
+    maven {
+        url = "https://www.cursemaven.com"
+    }
+}
+
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
     // XNet
-    compile fg.deobf("curse.maven:xnet:2954672") // 1.15-2.1.2-beta
-    compile fg.deobf("curse.maven:rftools-base:2951430") // 1.15-1.1.1-beta
-    compile fg.deobf("curse.maven:mcjtylib:2951236") // 1.15-4.1.0-beta
+    compile fg.deobf("curse.maven:xnet:3057539") // 1.16-3.0.7
+    compile fg.deobf("curse.maven:rftools-base:3057532") // 1.16-2.0.5
+    compile fg.deobf("curse.maven:mcjtylib:3063920") // 1.16-5.0.9
 
     // Mekanism
-    compile fg.deobf("curse.maven:mekanism:2952808") // 1.15.2-9.10.5.418
+    compile fg.deobf("curse.maven:mekanism:3075056") // 1.16.3-10.0.11.436
 }
 
 jar {

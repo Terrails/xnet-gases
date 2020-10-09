@@ -149,8 +149,8 @@ public class GasConnectorSettings extends AbstractConnectorSettings {
     public GasStack getMatcher() {
         if (!filter.isEmpty() && Capabilities.GAS_HANDLER_CAPABILITY != null && filter.getCapability(Capabilities.GAS_HANDLER_CAPABILITY).isPresent()) {
             IGasHandler handler = filter.getCapability(Capabilities.GAS_HANDLER_CAPABILITY).orElseThrow(() -> new IllegalArgumentException("IGasHandler Capability doesn't exist!"));
-            if (handler.getGasTankCount() > 0) {
-                return handler.getGasInTank(0);
+            if (handler.getTanks() > 0) {
+                return handler.getChemicalInTank(0);
             }
         }
         return null;

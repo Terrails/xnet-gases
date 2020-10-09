@@ -1,5 +1,6 @@
 modLoader="javafml"
-loaderVersion="[31,)"
+loaderVersion="[34,)"
+license="MIT"
 issueTrackerURL="https://github.com/Terrails/XNetGases/issues"
 
 [[mods]]
@@ -14,24 +15,24 @@ description=''' A simple addon for xnet that enables the movement of gases from 
 [[dependencies.xnetgases]]
     modId="mekanism"
     mandatory=true
-    versionRange="[1.15.2-9,)"
+    versionRange="[1.16.3-10,)"
     ordering="NONE"
     side="BOTH"
 [[dependencies.xnetgases]]
     modId="xnet"
     mandatory=true
-    versionRange="[1.15-2,)"
+    versionRange="[1.16-3,)"
     ordering="NONE"
     side="BOTH"
-[[dependencies.xnetgases]]
-    modId="rftoolsbase"
-    mandatory=true
-    versionRange="[1.15-1,)"
-    ordering="NONE"
-    side="BOTH"
-[[dependencies.xnetgases]]
-    modId="mcjtylib"
-    mandatory=true
-    versionRange="[1.15-4,)"
-    ordering="NONE"
-    side="BOTH"
+#[[dependencies.xnetgases]]
+#    modId="rftoolsbase"
+#    mandatory=true
+#    versionRange="[1.15-1,)"
+#    ordering="NONE"
+#    side="BOTH"
+#[[dependencies.xnetgases]]
+#    modId="mcjtylib"
+#    mandatory=true
+#    versionRange="[1.15-4,)"
+#    ordering="NONE"
+#    side="BOTH"
