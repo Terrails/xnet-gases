@@ -15,6 +15,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import terrails.xnetgases.gas.GasChannelType;
 import terrails.xnetgases.gas.GasConnectable;
+import terrails.xnetgases.slurry.SlurryChannelType;
+import terrails.xnetgases.slurry.SlurryConnectable;
 
 import java.nio.file.Path;
 
@@ -26,6 +28,9 @@ public class XNetGases {
 
     public static ForgeConfigSpec.IntValue maxGasRateNormal;
     public static ForgeConfigSpec.IntValue maxGasRateAdvanced;
+
+    public static ForgeConfigSpec.IntValue maxSlurryRateNormal;
+    public static ForgeConfigSpec.IntValue maxSlurryRateAdvanced;
 
     private static final ForgeConfigSpec CONFIG_SPEC;
 
@@ -40,6 +45,9 @@ public class XNetGases {
 
         XNet.xNetApi.registerChannelType(new GasChannelType());
         XNet.xNetApi.registerConnectable(new GasConnectable());
+
+        XNet.xNetApi.registerChannelType(new SlurryChannelType());
+        XNet.xNetApi.registerConnectable(new SlurryConnectable());
     }
 
     static {
@@ -52,6 +60,13 @@ public class XNetGases {
         maxGasRateAdvanced = builder
                 .comment("Maximum gas per operation that an advanced connector can input or output")
                 .defineInRange("maxGasRateAdvanced", 5000, 1, 1000000000);
+
+        maxSlurryRateNormal = builder
+                .comment("Maximum slurry per operation that a normal connector can input or output")
+                .defineInRange("maxSlurryRateNormal", 1000, 1, 1000000000);
+        maxSlurryRateAdvanced = builder
+                .comment("Maximum slurry per operation that an advanced connector can input or output")
+                .defineInRange("maxSlurryRateAdvanced", 5000, 1, 1000000000);
 
         CONFIG_SPEC = builder.pop().build();
     }

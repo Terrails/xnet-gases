@@ -1,4 +1,4 @@
-package terrails.xnetgases.gas;
+package terrails.xnetgases.slurry;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.JsonObject;
@@ -8,9 +8,8 @@ import mcjty.rftoolsbase.api.xnet.gui.IEditorGui;
 import mcjty.rftoolsbase.api.xnet.gui.IndicatorIcon;
 import mcjty.xnet.XNet;
 import mcjty.xnet.api.helper.AbstractConnectorSettings;
-
-import mekanism.api.chemical.gas.GasStack;
-import mekanism.api.chemical.gas.IGasHandler;
+import mekanism.api.chemical.slurry.ISlurryHandler;
+import mekanism.api.chemical.slurry.SlurryStack;
 import mekanism.common.capabilities.Capabilities;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
@@ -24,7 +23,7 @@ import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Set;
 
-public class GasConnectorSettings extends AbstractConnectorSettings {
+public class SlurryConnectorSettings extends AbstractConnectorSettings {
 
     public static final ResourceLocation iconGuiElements = new ResourceLocation(XNet.MODID, "textures/gui/guielements.png");
 
@@ -35,26 +34,27 @@ public class GasConnectorSettings extends AbstractConnectorSettings {
     public static final String TAG_FILTER = "flt";
     public static final String TAG_SPEED = "speed";
 
-    public enum GasMode {
+    public enum SlurryMode {
         INS,
         EXT
     }
 
-    private GasMode gasMode = GasMode.INS;
+    private SlurryConnectorSettings.SlurryMode slurryMode = SlurryConnectorSettings.SlurryMode.INS;
 
-    @Nullable private Integer priority = 0;
+    @Nullable
+    private Integer priority = 0;
     @Nullable private Integer rate = null;
     @Nullable private Integer minmax = null;
     private int speed = 2;
 
     private ItemStack filter = ItemStack.EMPTY;
 
-    public GasConnectorSettings(@Nonnull Direction side) {
+    public SlurryConnectorSettings(@Nonnull Direction side) {
         super(side);
     }
 
-    public GasMode getGasMode() {
-        return gasMode;
+    public SlurryConnectorSettings.SlurryMode getSlurryMode() {
+        return slurryMode;
     }
 
     public int getSpeed() {
@@ -68,7 +68,7 @@ public class GasConnectorSettings extends AbstractConnectorSettings {
 
     @Nonnull
     public Integer getRate() {
-        return rate == null ? XNetGases.maxGasRateNormal.get() : rate;
+        return rate == null ? XNetGases.maxSlurryRateNormal.get() : rate;
     }
 
     @Nullable
@@ -79,7 +79,7 @@ public class GasConnectorSettings extends AbstractConnectorSettings {
     @Nullable
     @Override
     public IndicatorIcon getIndicatorIcon() {
-        switch (gasMode) {
+        switch (slurryMode) {
             case INS:
                 return new IndicatorIcon(iconGuiElements, 0, 70, 13, 10);
             case EXT:
@@ -101,27 +101,27 @@ public class GasConnectorSettings extends AbstractConnectorSettings {
         int maxRate;
         if (advanced) {
             speeds = new String[] { "10", "20", "60", "100", "200" };
-            maxRate = XNetGases.maxGasRateAdvanced.get();
+            maxRate = XNetGases.maxSlurryRateAdvanced.get();
         } else {
             speeds = new String[] { "20", "60", "100", "200" };
-            maxRate = XNetGases.maxGasRateNormal.get();
+            maxRate = XNetGases.maxSlurryRateNormal.get();
         }
 
         sideGui(gui);
         colorsGui(gui);
         redstoneGui(gui);
         gui.nl()
-                .choices(TAG_MODE, "Insert or extract mode", gasMode, GasMode.values())
+                .choices(TAG_MODE, "Insert or extract mode", slurryMode, SlurryConnectorSettings.SlurryMode.values())
                 .choices(TAG_SPEED, "Number of ticks for each operation", Integer.toString(speed * 10), speeds)
                 .nl()
 
                 .label("Pri").integer(TAG_PRIORITY, "Insertion priority", priority, 36).nl()
 
                 .label("Rate")
-                .integer(TAG_RATE, gasMode == GasMode.EXT ? "Gas extraction rate|(max " + maxRate + "mb)" : "Gas insertion rate|(max " + maxRate + "mb)", rate, 36, maxRate)
+                .integer(TAG_RATE, slurryMode == SlurryConnectorSettings.SlurryMode.EXT ? "Slurry extraction rate|(max " + maxRate + "mb)" : "Slurry insertion rate|(max " + maxRate + "mb)", rate, 36, maxRate)
                 .shift(10)
-                .label(gasMode == GasMode.EXT ? "Min" : "Max")
-                .integer(TAG_MINMAX, gasMode == GasMode.EXT ? "Keep this amount of|gas in tank" : "Disable insertion if|gas level is too high", minmax, 36)
+                .label(slurryMode == SlurryConnectorSettings.SlurryMode.EXT ? "Min" : "Max")
+                .integer(TAG_MINMAX, slurryMode == SlurryConnectorSettings.SlurryMode.EXT ? "Keep this amount of|slurry in tank" : "Disable insertion if|slurry level is too high", minmax, 36)
                 .nl()
                 .label("Filter")
                 .ghostSlot(TAG_FILTER, filter);
@@ -132,7 +132,7 @@ public class GasConnectorSettings extends AbstractConnectorSettings {
 
     @Override
     public boolean isEnabled(String tag) {
-        if (gasMode == GasMode.INS) {
+        if (slurryMode == SlurryConnectorSettings.SlurryMode.INS) {
             if (tag.equals(TAG_FACING)) {
                 return advanced;
             }
@@ -146,9 +146,9 @@ public class GasConnectorSettings extends AbstractConnectorSettings {
     }
 
     @Nullable
-    public GasStack getMatcher() {
-        if (!filter.isEmpty() && Capabilities.GAS_HANDLER_CAPABILITY != null && filter.getCapability(Capabilities.GAS_HANDLER_CAPABILITY).isPresent()) {
-            IGasHandler handler = filter.getCapability(Capabilities.GAS_HANDLER_CAPABILITY).orElseThrow(() -> new IllegalArgumentException("IGasHandler Capability doesn't exist!"));
+    public SlurryStack getMatcher() {
+        if (!filter.isEmpty() && Capabilities.SLURRY_HANDLER_CAPABILITY != null && filter.getCapability(Capabilities.SLURRY_HANDLER_CAPABILITY).isPresent()) {
+            ISlurryHandler handler = filter.getCapability(Capabilities.SLURRY_HANDLER_CAPABILITY).orElseThrow(() -> new IllegalArgumentException("ISlurryHandler Capability doesn't exist!"));
             if (handler.getTanks() > 0) {
                 return handler.getChemicalInTank(0);
             }
@@ -159,7 +159,7 @@ public class GasConnectorSettings extends AbstractConnectorSettings {
     @Override
     public void update(Map<String, Object> data) {
         super.update(data);
-        gasMode = GasMode.valueOf(((String) data.get(TAG_MODE)).toUpperCase());
+        slurryMode = SlurryConnectorSettings.SlurryMode.valueOf(((String) data.get(TAG_MODE)).toUpperCase());
         rate = (Integer) data.get(TAG_RATE);
         minmax = (Integer) data.get(TAG_MINMAX);
         priority = (Integer) data.get(TAG_PRIORITY);
@@ -177,7 +177,7 @@ public class GasConnectorSettings extends AbstractConnectorSettings {
     public JsonObject writeToJson() {
         JsonObject object = new JsonObject();
         super.writeToJsonInternal(object);
-        setEnumSafe(object, "gasmode", gasMode);
+        setEnumSafe(object, "slurrymode", slurryMode);
         setIntegerSafe(object, "priority", priority);
         setIntegerSafe(object, "rate", rate);
         setIntegerSafe(object, "minmax", minmax);
@@ -185,7 +185,7 @@ public class GasConnectorSettings extends AbstractConnectorSettings {
         if (!filter.isEmpty()) {
             object.add("filter", JSonTools.itemStackToJson(filter));
         }
-        if (rate != null && rate > XNetGases.maxGasRateNormal.get()) {
+        if (rate != null && rate > XNetGases.maxSlurryRateNormal.get()) {
             object.add("advancedneeded", new JsonPrimitive(true));
         }
         if (speed == 1) {
@@ -197,7 +197,7 @@ public class GasConnectorSettings extends AbstractConnectorSettings {
     @Override
     public void readFromJson(JsonObject object) {
         super.readFromJsonInternal(object);
-        gasMode = getEnumSafe(object, "gasmode", Utils::getGasConnectorModeFrom);
+        slurryMode = getEnumSafe(object, "slurrymode", Utils::getSlurryConnectorModeFrom);
         priority = getIntegerSafe(object, "priority");
         rate = getIntegerSafe(object, "rate");
         minmax = getIntegerSafe(object, "minmax");
@@ -212,7 +212,7 @@ public class GasConnectorSettings extends AbstractConnectorSettings {
     @Override
     public void readFromNBT(CompoundNBT tag) {
         super.readFromNBT(tag);
-        gasMode = GasMode.values()[tag.getByte("gasMode")];
+        slurryMode = SlurryConnectorSettings.SlurryMode.values()[tag.getByte("slurryMode")];
         if (tag.contains("priority")) {
             priority = tag.getInt("priority");
         } else {
@@ -243,7 +243,7 @@ public class GasConnectorSettings extends AbstractConnectorSettings {
     @Override
     public void writeToNBT(CompoundNBT tag) {
         super.writeToNBT(tag);
-        tag.putByte("gasMode", (byte) gasMode.ordinal());
+        tag.putByte("slurryMode", (byte) slurryMode.ordinal());
         if (priority != null) {
             tag.putInt("priority", priority);
         }

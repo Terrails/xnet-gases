@@ -1,4 +1,4 @@
-package terrails.xnetgases.gas;
+package terrails.xnetgases.slurry;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
@@ -14,8 +14,8 @@ import mcjty.xnet.XNet;
 import mcjty.xnet.api.helper.DefaultChannelSettings;
 import mcjty.xnet.setup.Config;
 import mekanism.api.Action;
-import mekanism.api.chemical.gas.GasStack;
-import mekanism.api.chemical.gas.IGasHandler;
+import mekanism.api.chemical.slurry.ISlurryHandler;
+import mekanism.api.chemical.slurry.SlurryStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ResourceLocation;
@@ -27,7 +27,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
 
-public class GasChannelSettings extends DefaultChannelSettings implements IChannelSettings {
+public class SlurryChannelSettings extends DefaultChannelSettings implements IChannelSettings {
 
     public static final ResourceLocation iconGuiElements = new ResourceLocation(XNet.MODID, "textures/gui/guielements.png");
 
@@ -38,14 +38,14 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
         DISTRIBUTE
     }
 
-    private ChannelMode channelMode = ChannelMode.DISTRIBUTE;
+    private SlurryChannelSettings.ChannelMode channelMode = SlurryChannelSettings.ChannelMode.DISTRIBUTE;
     private int delay;
     private int roundRobinOffset;
 
-    private Map<SidedConsumer, GasConnectorSettings> gasExtractors;
-    private List<Pair<SidedConsumer, GasConnectorSettings>> gasConsumers;
+    private Map<SidedConsumer, SlurryConnectorSettings> slurryExtractors;
+    private List<Pair<SidedConsumer, SlurryConnectorSettings>> slurryConsumers;
 
-    public GasChannelSettings() {
+    public SlurryChannelSettings() {
         this.delay = 0;
         this.roundRobinOffset = 0;
     }
@@ -59,12 +59,12 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
 
     @Override
     public void readFromJson(JsonObject data) {
-        channelMode = Utils.getGasChannelModeFrom(data.get("mode").getAsString());
+        channelMode = Utils.getSlurryChannelModeFrom(data.get("mode").getAsString());
     }
 
     @Override
     public void readFromNBT(CompoundNBT nbt) {
-        channelMode = ChannelMode.values()[nbt.getByte("mode")];
+        channelMode = SlurryChannelSettings.ChannelMode.values()[nbt.getByte("mode")];
         this.delay = nbt.getInt("delay");
         this.roundRobinOffset = nbt.getInt("offset");
     }
@@ -89,8 +89,8 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
 
             World world = context.getControllerWorld();
             extractorsLoop:
-            for (Map.Entry<SidedConsumer, GasConnectorSettings> entry : gasExtractors.entrySet()) {
-                GasConnectorSettings settings = entry.getValue();
+            for (Map.Entry<SidedConsumer, SlurryConnectorSettings> entry : slurryExtractors.entrySet()) {
+                SlurryConnectorSettings settings = entry.getValue();
                 if (d % settings.getSpeed() != 0) {
                     continue;
                 }
@@ -103,9 +103,9 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
                     }
 
                     TileEntity te = world.getTileEntity(pos);
-                    Optional<IGasHandler> optional = Utils.getGasHandlerFor(te, settings.getFacing());
+                    Optional<ISlurryHandler> optional = Utils.getSlurryHandlerFor(te, settings.getFacing());
                     if (optional.isPresent()) {
-                        IGasHandler handler = optional.get();
+                        ISlurryHandler handler = optional.get();
 
                         if (checkRedstone(world, settings, extractorPos)) {
                             return;
@@ -114,13 +114,13 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
                             return;
                         }
 
-                        GasStack extractMatcher = settings.getMatcher();
+                        SlurryStack extractMatcher = settings.getMatcher();
 
                         long toExtract = settings.getRate();
 
                         Integer count = settings.getMinmax();
                         if (count != null) {
-                            long amount = Utils.getGasCount(handler, extractMatcher, settings.getFacing());
+                            long amount = Utils.getSlurryCount(handler, extractMatcher, settings.getFacing());
                             long canExtract = amount - count;
                             if (canExtract <= 0) {
                                 continue;
@@ -128,25 +128,25 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
                             toExtract = Math.min(toExtract, canExtract);
                         }
 
-                        List<Pair<SidedConsumer, GasConnectorSettings>> inserted = new ArrayList<>();
+                        List<Pair<SidedConsumer, SlurryConnectorSettings>> inserted = new ArrayList<>();
                         long remaining;
                         do {
-                            GasStack stack = Utils.extractGas(handler, toExtract, settings.getFacing(), Action.SIMULATE);
+                            SlurryStack stack = Utils.extractSlurry(handler, toExtract, settings.getFacing(), Action.SIMULATE);
                             if (stack.isEmpty() || (extractMatcher != null && !extractMatcher.equals(stack)))
                                 continue extractorsLoop;
                             toExtract = stack.getAmount();
                             inserted.clear();
-                            remaining = insertGasSimulate(inserted, context, stack);
+                            remaining = insertSlurrySimulate(inserted, context, stack);
                             toExtract -= remaining;
                             if (inserted.isEmpty() || toExtract <= 0) continue extractorsLoop;
                         } while (remaining > 0);
 
                         if (context.checkAndConsumeRF(Config.controllerOperationRFT.get())) {
-                            GasStack stack = Utils.extractGas(handler, toExtract, settings.getFacing(), Action.EXECUTE);
+                            SlurryStack stack = Utils.extractSlurry(handler, toExtract, settings.getFacing(), Action.EXECUTE);
                             if (stack.isEmpty()) {
-                                throw new NullPointerException(handler.getClass().getName() + " misbehaved! handler.extractGas(" + toExtract + ", Action.SIMULATE) returned null, even though handler.extractGas(" + toExtract + ", Action.EXECUTE) did not");
+                                throw new NullPointerException(handler.getClass().getName() + " misbehaved! handler.extractSlurry(" + toExtract + ", Action.SIMULATE) returned null, even though handler.extractSlurry(" + toExtract + ", Action.EXECUTE) did not");
                             }
-                            insertGasReal(context, inserted, stack);
+                            insertSlurryReal(context, inserted, stack);
                         }
                     }
                 }
@@ -156,20 +156,20 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
 
     @Override
     public void cleanCache() {
-        this.gasExtractors = null;
-        this.gasConsumers = null;
+        this.slurryExtractors = null;
+        this.slurryConsumers = null;
     }
 
-    private long insertGasSimulate(@Nonnull List<Pair<SidedConsumer, GasConnectorSettings>> inserted, @Nonnull IControllerContext context, @Nonnull GasStack stack) {
+    private long insertSlurrySimulate(@Nonnull List<Pair<SidedConsumer, SlurryConnectorSettings>> inserted, @Nonnull IControllerContext context, @Nonnull SlurryStack stack) {
         World world = context.getControllerWorld();
-        if (channelMode == ChannelMode.PRIORITY) {
+        if (channelMode == SlurryChannelSettings.ChannelMode.PRIORITY) {
             roundRobinOffset = 0;
         }
         long amount = stack.getAmount();
-        for (int j = 0; j < gasConsumers.size(); j++) {
-            int i = (j + roundRobinOffset) % gasConsumers.size();
-            Pair<SidedConsumer, GasConnectorSettings> entry = gasConsumers.get(i);
-            GasConnectorSettings settings = entry.getSecond();
+        for (int j = 0; j < slurryConsumers.size(); j++) {
+            int i = (j + roundRobinOffset) % slurryConsumers.size();
+            Pair<SidedConsumer, SlurryConnectorSettings> entry = slurryConsumers.get(i);
+            SlurryConnectorSettings settings = entry.getSecond();
 
             if (settings.getMatcher() == null || settings.getMatcher().equals(stack)) {
                 BlockPos consumerPos = context.findConsumerPosition(entry.getFirst().getConsumerId());
@@ -187,15 +187,15 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
                     BlockPos pos = consumerPos.offset(entry.getFirst().getSide());
                     TileEntity te = world.getTileEntity(pos);
 
-                    Optional<IGasHandler> optional = Utils.getGasHandlerFor(te, settings.getFacing());
+                    Optional<ISlurryHandler> optional = Utils.getSlurryHandlerFor(te, settings.getFacing());
                     if (optional.isPresent()) {
-                        IGasHandler handler = optional.get();
+                        ISlurryHandler handler = optional.get();
 
                         long toInsert = Math.min(settings.getRate(), amount);
 
                         Integer count = settings.getMinmax();
                         if (count != null) {
-                            long a = Utils.getGasCount(handler, settings.getMatcher(), settings.getFacing());
+                            long a = Utils.getSlurryCount(handler, settings.getMatcher(), settings.getFacing());
                             long canInsert = count - a;
                             if (canInsert <= 0) {
                                 continue;
@@ -203,10 +203,10 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
                             toInsert = Math.min(toInsert, canInsert);
                         }
 
-                        GasStack copy = stack.copy();
+                        SlurryStack copy = stack.copy();
                         copy.setAmount(toInsert);
 
-                        GasStack remaining = Utils.insertGas(handler, copy, settings.getFacing(), Action.SIMULATE);
+                        SlurryStack remaining = Utils.insertSlurry(handler, copy, settings.getFacing(), Action.SIMULATE);
                         if (remaining.isEmpty() || (!remaining.isEmpty() && copy.getAmount() != remaining.getAmount())) {
                             inserted.add(entry);
                             amount -= (copy.getAmount() - remaining.getAmount());
@@ -221,26 +221,26 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
         return amount;
     }
 
-    private void insertGasReal(@Nonnull IControllerContext context, @Nonnull List<Pair<SidedConsumer, GasConnectorSettings>> inserted, @Nonnull GasStack stack) {
+    private void insertSlurryReal(@Nonnull IControllerContext context, @Nonnull List<Pair<SidedConsumer, SlurryConnectorSettings>> inserted, @Nonnull SlurryStack stack) {
         long amount = stack.getAmount();
-        for (Pair<SidedConsumer, GasConnectorSettings> pair : inserted) {
+        for (Pair<SidedConsumer, SlurryConnectorSettings> pair : inserted) {
 
-            GasConnectorSettings settings = pair.getSecond();
+            SlurryConnectorSettings settings = pair.getSecond();
             BlockPos consumerPosition = context.findConsumerPosition(pair.getFirst().getConsumerId());
 
             assert consumerPosition != null;
             BlockPos pos = consumerPosition.offset(pair.getFirst().getSide());
             TileEntity te = context.getControllerWorld().getTileEntity(pos);
 
-            Optional<IGasHandler> optional = Utils.getGasHandlerFor(te, settings.getFacing());
+            Optional<ISlurryHandler> optional = Utils.getSlurryHandlerFor(te, settings.getFacing());
             if (optional.isPresent()) {
-                IGasHandler handler = optional.get();
+                ISlurryHandler handler = optional.get();
 
                 long toInsert = Math.min(settings.getRate(), amount);
 
                 Integer count = settings.getMinmax();
                 if (count != null) {
-                    long a = Utils.getGasCount(handler, settings.getMatcher(), settings.getFacing());
+                    long a = Utils.getSlurryCount(handler, settings.getMatcher(), settings.getFacing());
                     long caninsert = count - a;
                     if (caninsert <= 0) {
                         continue;
@@ -248,12 +248,12 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
                     toInsert = Math.min(toInsert, caninsert);
                 }
 
-                GasStack copy = stack.copy();
+                SlurryStack copy = stack.copy();
                 copy.setAmount(toInsert);
 
-                GasStack remaining = Utils.insertGas(handler, copy, settings.getFacing(), Action.EXECUTE);
+                SlurryStack remaining = Utils.insertSlurry(handler, copy, settings.getFacing(), Action.EXECUTE);
                 if (remaining.isEmpty() || (!remaining.isEmpty() && copy.getAmount() != remaining.getAmount())) {
-                    roundRobinOffset = (roundRobinOffset + 1) % gasConsumers.size();
+                    roundRobinOffset = (roundRobinOffset + 1) % slurryConsumers.size();
                     amount -= (copy.getAmount() - remaining.getAmount());
                     if (amount <= 0) {
                         return;
@@ -264,21 +264,21 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
     }
 
     private void updateCache(int channel, IControllerContext context) {
-        if (this.gasExtractors == null) {
-            this.gasExtractors = new HashMap<>();
-            this.gasConsumers = new ArrayList<>();
+        if (this.slurryExtractors == null) {
+            this.slurryExtractors = new HashMap<>();
+            this.slurryConsumers = new ArrayList<>();
             Map<SidedConsumer, IConnectorSettings> connectors = context.getConnectors(channel);
             Iterator<Map.Entry<SidedConsumer, IConnectorSettings>> iterator = connectors.entrySet().iterator();
 
             Map.Entry<SidedConsumer, IConnectorSettings> entry;
-            GasConnectorSettings con;
+            SlurryConnectorSettings con;
             while (iterator.hasNext()) {
                 entry = iterator.next();
-                con = (GasConnectorSettings) entry.getValue();
-                if (con.getGasMode() == GasConnectorSettings.GasMode.EXT) {
-                    this.gasExtractors.put(entry.getKey(), con);
+                con = (SlurryConnectorSettings) entry.getValue();
+                if (con.getSlurryMode() == SlurryConnectorSettings.SlurryMode.EXT) {
+                    this.slurryExtractors.put(entry.getKey(), con);
                 } else {
-                    this.gasConsumers.add(Pair.of(entry.getKey(), con));
+                    this.slurryConsumers.add(Pair.of(entry.getKey(), con));
                 }
             }
 
@@ -287,13 +287,13 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
 
             while (iterator.hasNext()) {
                 entry = iterator.next();
-                con = (GasConnectorSettings) entry.getValue();
-                if (con.getGasMode() == GasConnectorSettings.GasMode.INS) {
-                    this.gasConsumers.add(Pair.of(entry.getKey(), con));
+                con = (SlurryConnectorSettings) entry.getValue();
+                if (con.getSlurryMode() == SlurryConnectorSettings.SlurryMode.INS) {
+                    this.slurryConsumers.add(Pair.of(entry.getKey(), con));
                 }
             }
 
-            this.gasConsumers.sort((o1, o2) -> (o2.getSecond()).getPriority().compareTo((o1.getSecond()).getPriority()));
+            this.slurryConsumers.sort((o1, o2) -> (o2.getSecond()).getPriority().compareTo((o1.getSecond()).getPriority()));
         }
     }
 
@@ -316,12 +316,12 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
 
     @Override
     public void createGui(IEditorGui gui) {
-        gui.nl().choices(TAG_MODE, "Gas distribution mode", this.channelMode, GasChannelSettings.ChannelMode.values());
+        gui.nl().choices(TAG_MODE, "Slurry distribution mode", this.channelMode, SlurryChannelSettings.ChannelMode.values());
     }
 
     @Override
     public void update(Map<String, Object> data) {
-        this.channelMode = GasChannelSettings.ChannelMode.valueOf(((String) data.get(TAG_MODE)).toUpperCase());
+        this.channelMode = SlurryChannelSettings.ChannelMode.valueOf(((String) data.get(TAG_MODE)).toUpperCase());
     }
 
     @Override
