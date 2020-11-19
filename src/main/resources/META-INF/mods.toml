@@ -15,7 +15,7 @@ description=''' A simple addon for xnet that enables the movement of gases from 
 [[dependencies.xnetgases]]
     modId="mekanism"
     mandatory=true
-    versionRange="[1.16.3-10,)"
+    versionRange="[10,)"
     ordering="NONE"
     side="BOTH"
 [[dependencies.xnetgases]]
@@ -24,15 +24,3 @@ description=''' A simple addon for xnet that enables the movement of gases from 
     versionRange="[1.16-3,)"
     ordering="NONE"
     side="BOTH"
-#[[dependencies.xnetgases]]
-#    modId="rftoolsbase"
-#    mandatory=true
-#    versionRange="[1.15-1,)"
-#    ordering="NONE"
-#    side="BOTH"
-#[[dependencies.xnetgases]]
-#    modId="mcjtylib"
-#    mandatory=true
-#    versionRange="[1.15-4,)"
-#    ordering="NONE"
-#    side="BOTH"
