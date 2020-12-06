@@ -14,7 +14,7 @@ def minecraft_version = "1.16.4"
 def forge_version = "35.0.18"
 def mappings_version = ["snapshot", "20201028-1.16.3"]
 
-version = "2.1.0"
+version = "2.1.1"
 group = 'terrails.xnetgases'
 archivesBaseName = "XNetGases-${minecraft_version}"
 
@@ -52,18 +52,29 @@ repositories {
     maven {
         url = "https://www.cursemaven.com"
     }
+    flatDir {
+        dir "libs"
+    }
 }
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
     // XNet
-    compile fg.deobf("curse.maven:xnet:3110245") // 1.16-3.0.9
-    compile fg.deobf("curse.maven:rftools-base:3116387") // 1.16-2.0.7
-    compile fg.deobf("curse.maven:mcjtylib:3116381") // 1.16-5.0.14
+    compile fg.deobf("blank:xnet:1.16-3.0.10") // 1.16-3.0.10
+    compile fg.deobf("blank:rftoolsbase:1.16-2.0.8") // 1.16-2.0.8
+    compile fg.deobf("blank:mcjtylib:1.16-5.0.15") // 1.16-5.0.15
 
     // Mekanism
-    compile fg.deobf("curse.maven:mekanism:3100510") // 1.16.4-10.0.17.444
+    compile fg.deobf("blank:mekanism-1.16.4:10.0.17.444") // 1.16.4-10.0.17.444
+
+//    // XNet
+//    compile fg.deobf("curse.maven:xnet:3131258") // 1.16-3.0.10
+//    compile fg.deobf("curse.maven:rftools-base:3131245") // 1.16-2.0.8
+//    compile fg.deobf("curse.maven:mcjtylib:3131241") // 1.16-5.0.15
+//
+//    // Mekanism
+//    compile fg.deobf("curse.maven:mekanism:3100510") // 1.16.4-10.0.17.444
 }
 
 jar {
