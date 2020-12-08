@@ -52,18 +52,29 @@ repositories {
     maven {
         url "https://www.cursemaven.com"
     }
+    flatDir {
+        dir "libs"
+    }
 }
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
     // XNet
-    compile fg.deobf("curse.maven:xnet:3131257") // 1.15-2.1.14
-    compile fg.deobf("curse.maven:rftools-base:3131242") // 1.15-1.1.9
-    compile fg.deobf("curse.maven:mcjtylib:3131240") // 1.15-4.1.13
+    compile fg.deobf("blank:xnet:1.15-2.1.14") // 1.15-2.1.14
+    compile fg.deobf("blank:rftoolsbase:1.15-1.1.9") // 1.15-1.1.9
+    compile fg.deobf("blank:mcjtylib:1.15-4.1.13") // 1.15-4.1.13
 
     // Mekanism
-    compile fg.deobf("curse.maven:mekanism:2996531") // 1.15.2-9.10.9.422
+    compile fg.deobf("blank:mekanism-1.15.2:9.10.9.422") // 1.15.2-9.10.9.422
+
+//    // XNet
+//    compile fg.deobf("curse.maven:xnet:3131257") // 1.15-2.1.14
+//    compile fg.deobf("curse.maven:rftools-base:3131242") // 1.15-1.1.9
+//    compile fg.deobf("curse.maven:mcjtylib:3131240") // 1.15-4.1.13
+//
+//    // Mekanism
+//    compile fg.deobf("curse.maven:mekanism:2996531") // 1.15.2-9.10.9.422
 }
 
 jar {
