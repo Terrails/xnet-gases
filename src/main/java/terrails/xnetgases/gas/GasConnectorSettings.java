@@ -6,8 +6,8 @@ import com.google.gson.JsonPrimitive;
 import mcjty.lib.varia.JSonTools;
 import mcjty.rftoolsbase.api.xnet.gui.IEditorGui;
 import mcjty.rftoolsbase.api.xnet.gui.IndicatorIcon;
+import mcjty.rftoolsbase.api.xnet.helper.AbstractConnectorSettings;
 import mcjty.xnet.XNet;
-import mcjty.xnet.api.helper.AbstractConnectorSettings;
 
 import mekanism.api.chemical.gas.GasStack;
 import mekanism.api.chemical.gas.IGasHandler;
