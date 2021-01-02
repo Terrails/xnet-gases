@@ -11,7 +11,7 @@ buildscript {
 apply plugin: 'net.minecraftforge.gradle'
 
 def minecraft_version = "1.16.4"
-def forge_version = "35.0.18"
+def forge_version = "35.1.28"
 def mappings_version = ["snapshot", "20201028-1.16.3"]
 
 version = "2.1.1"
@@ -29,7 +29,7 @@ minecraft {
             property 'forge.logging.console.level', 'debug'
 
             mods {
-                xnetmekanism {
+                xnetgases {
                     source sourceSets.main
                 }
             }
@@ -40,7 +40,7 @@ minecraft {
             property 'forge.logging.console.level', 'debug'
 
             mods {
-                xnetmekanism {
+                xnetgases {
                     source sourceSets.main
                 }
             }
@@ -52,29 +52,18 @@ repositories {
     maven {
         url = "https://www.cursemaven.com"
     }
-    flatDir {
-        dir "libs"
-    }
 }
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
     // XNet
-    compile fg.deobf("blank:xnet:1.16-3.0.10") // 1.16-3.0.10
-    compile fg.deobf("blank:rftoolsbase:1.16-2.0.8") // 1.16-2.0.8
-    compile fg.deobf("blank:mcjtylib:1.16-5.0.15") // 1.16-5.0.15
+    compile fg.deobf("curse.maven:xnet-260912:3140153") // 1.16-3.0.11
+    compile fg.deobf("curse.maven:rftools-base-326041:3140147") // 1.16-2.0.9
+    compile fg.deobf("curse.maven:mcjtylib-233105:3131241") // 1.16-5.0.15
 
     // Mekanism
-    compile fg.deobf("blank:mekanism-1.16.4:10.0.17.444") // 1.16.4-10.0.17.444
-
-//    // XNet
-//    compile fg.deobf("curse.maven:xnet:3131258") // 1.16-3.0.10
-//    compile fg.deobf("curse.maven:rftools-base:3131245") // 1.16-2.0.8
-//    compile fg.deobf("curse.maven:mcjtylib:3131241") // 1.16-5.0.15
-//
-//    // Mekanism
-//    compile fg.deobf("curse.maven:mekanism:3100510") // 1.16.4-10.0.17.444
+    compile fg.deobf("curse.maven:mekanism-268560:3134211") // 1.16.4-10.0.18.445
 }
 
 jar {
