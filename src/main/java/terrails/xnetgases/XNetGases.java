@@ -15,6 +15,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import terrails.xnetgases.gas.GasChannelType;
 import terrails.xnetgases.gas.GasConnectable;
+import terrails.xnetgases.logic.XGLogicChannelType;
 import terrails.xnetgases.slurry.SlurryChannelType;
 import terrails.xnetgases.slurry.SlurryConnectable;
 
@@ -48,6 +49,8 @@ public class XNetGases {
 
         XNet.xNetApi.registerChannelType(new SlurryChannelType());
         XNet.xNetApi.registerConnectable(new SlurryConnectable());
+
+        XNet.xNetApi.registerChannelType(new XGLogicChannelType());
     }
 
     static {

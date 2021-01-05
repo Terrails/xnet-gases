@@ -1,17 +1,21 @@
 package terrails.xnetgases;
 
 import mekanism.api.Action;
+import mekanism.api.chemical.gas.Gas;
 import mekanism.api.chemical.gas.GasStack;
 import mekanism.api.chemical.gas.IGasHandler;
 import mekanism.api.chemical.gas.IGasHandler.ISidedGasHandler;
 import mekanism.api.chemical.slurry.ISlurryHandler;
 import mekanism.api.chemical.slurry.ISlurryHandler.ISidedSlurryHandler;
+import mekanism.api.chemical.slurry.Slurry;
 import mekanism.api.chemical.slurry.SlurryStack;
 import mekanism.common.capabilities.Capabilities;
 import net.minecraft.util.Direction;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import terrails.xnetgases.gas.GasChannelSettings;
 import terrails.xnetgases.gas.GasConnectorSettings;
+import terrails.xnetgases.logic.XGLogicConnectorSettings;
+import terrails.xnetgases.logic.XGSensor;
 import terrails.xnetgases.slurry.SlurryChannelSettings;
 import terrails.xnetgases.slurry.SlurryConnectorSettings;
 
@@ -28,6 +32,12 @@ public class Utils {
 
     private static Map<String, SlurryConnectorSettings.SlurryMode> slurryConnectorModeCache;
     private static Map<String, SlurryChannelSettings.ChannelMode> slurryChannelModeCache;
+
+    private static Map<String, XGLogicConnectorSettings.LogicMode> logicConnectorModeCache;
+
+    private static Map<String, XGSensor.SensorMode> sensorModeCache;
+    private static Map<String, XGSensor.Operator> operatorModeCache;
+
 
     @Nonnull
     public static GasConnectorSettings.GasMode getGasConnectorModeFrom(String s) {
@@ -71,6 +81,39 @@ public class Utils {
             }
         }
         return slurryChannelModeCache.get(s);
+    }
+
+    @Nonnull
+    public static XGLogicConnectorSettings.LogicMode getLogicConnectorModeFrom(String s) {
+        if (logicConnectorModeCache == null) {
+            logicConnectorModeCache = new HashMap<>();
+            for (XGLogicConnectorSettings.LogicMode mode : XGLogicConnectorSettings.LogicMode.values()) {
+                logicConnectorModeCache.put(mode.name(), mode);
+            }
+        }
+        return logicConnectorModeCache.get(s);
+    }
+
+    @Nonnull
+    public static XGSensor.SensorMode getLogicSensorModeFrom(String s) {
+        if (sensorModeCache == null) {
+            sensorModeCache = new HashMap<>();
+            for (XGSensor.SensorMode mode : XGSensor.SensorMode.values()) {
+                sensorModeCache.put(mode.name(), mode);
+            }
+        }
+        return sensorModeCache.get(s);
+    }
+
+    @Nonnull
+    public static XGSensor.Operator getLogicOperatorModeFrom(String s) {
+        if (operatorModeCache == null) {
+            operatorModeCache = new HashMap<>();
+            for (XGSensor.Operator mode : XGSensor.Operator.values()) {
+                operatorModeCache.put(mode.name(), mode);
+            }
+        }
+        return operatorModeCache.get(s);
     }
 
     @Nonnull
@@ -133,19 +176,19 @@ public class Utils {
         } else return handler.extractChemical(amount, action);
     }
 
-    public static long getGasCount(@Nonnull IGasHandler handler, @Nullable GasStack matcher, @Nullable Direction direction) {
-        int count = 0;
+    public static long getGasCount(@Nonnull IGasHandler handler, @Nullable Gas matcher, @Nullable Direction direction) {
+        long count = 0;
         if (direction != null && handler instanceof ISidedGasHandler) {
             for (int i = 0; i < ((ISidedGasHandler) handler).getTanks(direction); i++) {
                 GasStack stack = ((ISidedGasHandler) handler).getChemicalInTank(i, direction);
-                if (!stack.isEmpty() && (matcher == null || matcher.equals(stack))) {
+                if (!stack.isEmpty() && (matcher == null || matcher == stack.getType())) {
                     count += stack.getAmount();
                 }
             }
         } else {
             for (int i = 0; i < handler.getTanks(); i++) {
                 GasStack stack = handler.getChemicalInTank(i);
-                if (!stack.isEmpty() && (matcher == null || matcher.equals(stack))) {
+                if (!stack.isEmpty() && (matcher == null || matcher == stack.getType())) {
                     count += stack.getAmount();
                 }
             }
@@ -153,23 +196,32 @@ public class Utils {
         return count;
     }
 
-    public static long getSlurryCount(@Nonnull ISlurryHandler handler, @Nullable SlurryStack matcher, @Nullable Direction direction) {
-        int count = 0;
+    public static long getGasCount(@Nonnull IGasHandler handler, @Nullable GasStack matcher, @Nullable Direction direction) {
+        return getGasCount(handler, matcher == null || matcher.isEmpty() ? null : matcher.getType(), direction);
+    }
+
+    public static long getSlurryCount(@Nonnull ISlurryHandler handler, @Nullable Slurry matcher, @Nullable Direction direction) {
+        long count = 0;
         if (direction != null && handler instanceof ISidedSlurryHandler) {
             for (int i = 0; i < ((ISidedSlurryHandler) handler).getTanks(direction); i++) {
                 SlurryStack stack = ((ISidedSlurryHandler) handler).getChemicalInTank(i, direction);
-                if (!stack.isEmpty() && (matcher == null || matcher.equals(stack))) {
+                if (!stack.isEmpty() && (matcher == null || matcher == stack.getType())) {
                     count += stack.getAmount();
                 }
             }
         } else {
             for (int i = 0; i < handler.getTanks(); i++) {
                 SlurryStack stack = handler.getChemicalInTank(i);
-                if (!stack.isEmpty() && (matcher == null || matcher.equals(stack))) {
+                if (!stack.isEmpty() && (matcher == null || matcher == stack.getType())) {
                     count += stack.getAmount();
                 }
             }
         }
+
         return count;
+    }
+
+    public static long getSlurryCount(@Nonnull ISlurryHandler handler, @Nullable SlurryStack matcher, @Nullable Direction direction) {
+        return getSlurryCount(handler, matcher == null || matcher.isEmpty() ? null : matcher.getType(), direction);
     }
 }
