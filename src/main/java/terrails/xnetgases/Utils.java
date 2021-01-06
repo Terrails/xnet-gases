@@ -14,7 +14,6 @@ import net.minecraft.util.Direction;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import terrails.xnetgases.gas.GasChannelSettings;
 import terrails.xnetgases.gas.GasConnectorSettings;
-import terrails.xnetgases.logic.XGLogicConnectorSettings;
 import terrails.xnetgases.logic.XGSensor;
 import terrails.xnetgases.slurry.SlurryChannelSettings;
 import terrails.xnetgases.slurry.SlurryConnectorSettings;
@@ -32,8 +31,6 @@ public class Utils {
 
     private static Map<String, SlurryConnectorSettings.SlurryMode> slurryConnectorModeCache;
     private static Map<String, SlurryChannelSettings.ChannelMode> slurryChannelModeCache;
-
-    private static Map<String, XGLogicConnectorSettings.LogicMode> logicConnectorModeCache;
 
     private static Map<String, XGSensor.SensorMode> sensorModeCache;
     private static Map<String, XGSensor.Operator> operatorModeCache;
@@ -81,17 +78,6 @@ public class Utils {
             }
         }
         return slurryChannelModeCache.get(s);
-    }
-
-    @Nonnull
-    public static XGLogicConnectorSettings.LogicMode getLogicConnectorModeFrom(String s) {
-        if (logicConnectorModeCache == null) {
-            logicConnectorModeCache = new HashMap<>();
-            for (XGLogicConnectorSettings.LogicMode mode : XGLogicConnectorSettings.LogicMode.values()) {
-                logicConnectorModeCache.put(mode.name(), mode);
-            }
-        }
-        return logicConnectorModeCache.get(s);
     }
 
     @Nonnull
