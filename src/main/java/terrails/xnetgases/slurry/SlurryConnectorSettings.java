@@ -15,7 +15,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.Direction;
 import net.minecraft.util.ResourceLocation;
-import terrails.xnetgases.Utils;
 import terrails.xnetgases.XNetGases;
 
 import javax.annotation.Nonnull;
@@ -197,7 +196,7 @@ public class SlurryConnectorSettings extends AbstractConnectorSettings {
     @Override
     public void readFromJson(JsonObject object) {
         super.readFromJsonInternal(object);
-        slurryMode = getEnumSafe(object, "slurrymode", Utils::getSlurryConnectorModeFrom);
+        slurryMode = getEnumSafe(object, "slurrymode", SlurryUtils::getConnectorModeFrom);
         priority = getIntegerSafe(object, "priority");
         rate = getIntegerSafe(object, "rate");
         minmax = getIntegerSafe(object, "minmax");

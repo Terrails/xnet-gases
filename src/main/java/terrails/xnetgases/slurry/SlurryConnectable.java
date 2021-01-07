@@ -6,7 +6,6 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockReader;
-import terrails.xnetgases.Utils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -16,7 +15,7 @@ public class SlurryConnectable implements IConnectable {
 
     @Override
     public ConnectResult canConnect(@Nonnull IBlockReader reader, @Nonnull BlockPos connectorPos, @Nonnull BlockPos blockPos, @Nullable TileEntity tile, @Nonnull Direction direction) {
-        Optional<ISlurryHandler> optional = Utils.getSlurryHandlerFor(tile, direction);
+        Optional<ISlurryHandler> optional = SlurryUtils.getSlurryHandlerFor(tile, direction);
         if (optional.isPresent()) {
             return ConnectResult.YES;
         } else return ConnectResult.DEFAULT;

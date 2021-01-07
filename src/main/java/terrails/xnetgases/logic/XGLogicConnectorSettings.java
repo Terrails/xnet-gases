@@ -131,9 +131,6 @@ public class XGLogicConnectorSettings extends AbstractConnectorSettings {
             sensorArray.add(o);
         }
         object.add("sensors", sensorArray);
-        if (speed == 1) {
-            object.add("advancedneeded", new JsonPrimitive(true));
-        }
         return object;
     }
 

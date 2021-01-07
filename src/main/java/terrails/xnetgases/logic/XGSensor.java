@@ -11,7 +11,8 @@ import mekanism.api.chemical.slurry.Slurry;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
-import terrails.xnetgases.Utils;
+import terrails.xnetgases.gas.GasUtils;
+import terrails.xnetgases.slurry.SlurryUtils;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
@@ -119,25 +120,25 @@ public class XGSensor {
 
     public boolean test(@Nullable TileEntity te, XGLogicConnectorSettings settings) {
         switch (sensorMode) {
-            case GAS: return Utils.getGasHandlerFor(te, settings.getFacing())
-                    .map(handler -> Utils.getGasHandlerFor(filter, null).map(filterHandler -> {
+            case GAS: return GasUtils.getGasHandlerFor(te, settings.getFacing())
+                    .map(handler -> GasUtils.getGasHandlerFor(filter, null).map(filterHandler -> {
                         if (filterHandler.getTanks() <= 0) {
                             return false;
                         }
 
                         Gas filterChemical = filterHandler.getChemicalInTank(0).getType();
-                        return operator.match(Utils.getGasCount(handler, filterChemical, settings.getFacing()), amount);
-                    }).orElseGet(() -> filter.isEmpty() && operator.match(Utils.getGasCount(handler, (Gas) null, settings.getFacing()), amount)))
+                        return operator.match(GasUtils.getGasCount(handler, settings.getFacing(), filterChemical), amount);
+                    }).orElseGet(() -> filter.isEmpty() && operator.match(GasUtils.getGasCount(handler, settings.getFacing()), amount)))
                     .orElse(false);
-            case SLURRY: return Utils.getSlurryHandlerFor(te, settings.getFacing())
-                    .map(handler -> Utils.getSlurryHandlerFor(filter, null).map(filterHandler -> {
+            case SLURRY: return SlurryUtils.getSlurryHandlerFor(te, settings.getFacing())
+                    .map(handler -> SlurryUtils.getSlurryHandlerFor(filter, null).map(filterHandler -> {
                         if (filterHandler.getTanks() <= 0) {
                             return false;
                         }
 
                         Slurry filterChemical = filterHandler.getChemicalInTank(0).getType();
-                        return operator.match(Utils.getSlurryCount(handler, filterChemical, settings.getFacing()), amount);
-                    }).orElseGet(() -> filter.isEmpty() && operator.match(Utils.getSlurryCount(handler, (Slurry) null, settings.getFacing()), amount)))
+                        return operator.match(SlurryUtils.getSlurryCount(handler, settings.getFacing(), filterChemical), amount);
+                    }).orElseGet(() -> filter.isEmpty() && operator.match(SlurryUtils.getSlurryCount(handler, settings.getFacing()), amount)))
                     .orElse(false);
         }
         return false;
@@ -195,9 +196,9 @@ public class XGSensor {
 
     public void readFromJson(JsonObject json) {
         amount = json.has(TAG_AMOUNT) ? json.get(TAG_AMOUNT).getAsInt() : 0;
-        operator = json.has(TAG_OPERATOR) ? Utils.getLogicOperatorModeFrom(json.get(TAG_OPERATOR).getAsString()) : Operator.EQUAL;
+        operator = json.has(TAG_OPERATOR) ? LogicUtils.getOperatorFrom(json.get(TAG_OPERATOR).getAsString()) : Operator.EQUAL;
         outputColor = json.has(TAG_COLOR) ? BaseStringTranslators.getColor(json.get(TAG_COLOR).getAsString()) : Color.OFF;
-        sensorMode = json.has(TAG_MODE) ? Utils.getLogicSensorModeFrom(json.get(TAG_MODE).getAsString()) : SensorMode.OFF;
+        sensorMode = json.has(TAG_MODE) ? LogicUtils.getSensorModeFrom(json.get(TAG_MODE).getAsString()) : SensorMode.OFF;
         if (json.has("filter")) {
             filter = JSonTools.jsonToItemStack(json.get("filter").getAsJsonObject());
         } else filter = ItemStack.EMPTY;

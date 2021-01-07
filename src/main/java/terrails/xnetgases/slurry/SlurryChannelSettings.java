@@ -21,7 +21,6 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import terrails.xnetgases.Utils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -59,7 +58,7 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
 
     @Override
     public void readFromJson(JsonObject data) {
-        channelMode = Utils.getSlurryChannelModeFrom(data.get("mode").getAsString());
+        channelMode = SlurryUtils.getChannelModeFrom(data.get("mode").getAsString());
     }
 
     @Override
@@ -103,7 +102,7 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
                     }
 
                     TileEntity te = world.getTileEntity(pos);
-                    Optional<ISlurryHandler> optional = Utils.getSlurryHandlerFor(te, settings.getFacing());
+                    Optional<ISlurryHandler> optional = SlurryUtils.getSlurryHandlerFor(te, settings.getFacing());
                     if (optional.isPresent()) {
                         ISlurryHandler handler = optional.get();
 
@@ -120,7 +119,7 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
 
                         Integer count = settings.getMinmax();
                         if (count != null) {
-                            long amount = Utils.getSlurryCount(handler, extractMatcher, settings.getFacing());
+                            long amount = SlurryUtils.getSlurryCount(handler, settings.getFacing(), extractMatcher);
                             long canExtract = amount - count;
                             if (canExtract <= 0) {
                                 continue;
@@ -131,7 +130,7 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
                         List<Pair<SidedConsumer, SlurryConnectorSettings>> inserted = new ArrayList<>();
                         long remaining;
                         do {
-                            SlurryStack stack = Utils.extractSlurry(handler, toExtract, settings.getFacing(), Action.SIMULATE);
+                            SlurryStack stack = SlurryUtils.extractSlurry(handler, toExtract, settings.getFacing(), Action.SIMULATE);
                             if (stack.isEmpty() || (extractMatcher != null && !extractMatcher.equals(stack)))
                                 continue extractorsLoop;
                             toExtract = stack.getAmount();
@@ -142,7 +141,7 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
                         } while (remaining > 0);
 
                         if (context.checkAndConsumeRF(Config.controllerOperationRFT.get())) {
-                            SlurryStack stack = Utils.extractSlurry(handler, toExtract, settings.getFacing(), Action.EXECUTE);
+                            SlurryStack stack = SlurryUtils.extractSlurry(handler, toExtract, settings.getFacing(), Action.EXECUTE);
                             if (stack.isEmpty()) {
                                 throw new NullPointerException(handler.getClass().getName() + " misbehaved! handler.extractSlurry(" + toExtract + ", Action.SIMULATE) returned null, even though handler.extractSlurry(" + toExtract + ", Action.EXECUTE) did not");
                             }
@@ -187,7 +186,7 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
                     BlockPos pos = consumerPos.offset(entry.getFirst().getSide());
                     TileEntity te = world.getTileEntity(pos);
 
-                    Optional<ISlurryHandler> optional = Utils.getSlurryHandlerFor(te, settings.getFacing());
+                    Optional<ISlurryHandler> optional = SlurryUtils.getSlurryHandlerFor(te, settings.getFacing());
                     if (optional.isPresent()) {
                         ISlurryHandler handler = optional.get();
 
@@ -195,7 +194,7 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
 
                         Integer count = settings.getMinmax();
                         if (count != null) {
-                            long a = Utils.getSlurryCount(handler, settings.getMatcher(), settings.getFacing());
+                            long a = SlurryUtils.getSlurryCount(handler, settings.getFacing(), settings.getMatcher());
                             long canInsert = count - a;
                             if (canInsert <= 0) {
                                 continue;
@@ -206,7 +205,7 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
                         SlurryStack copy = stack.copy();
                         copy.setAmount(toInsert);
 
-                        SlurryStack remaining = Utils.insertSlurry(handler, copy, settings.getFacing(), Action.SIMULATE);
+                        SlurryStack remaining = SlurryUtils.insertSlurry(handler, copy, settings.getFacing(), Action.SIMULATE);
                         if (remaining.isEmpty() || (!remaining.isEmpty() && copy.getAmount() != remaining.getAmount())) {
                             inserted.add(entry);
                             amount -= (copy.getAmount() - remaining.getAmount());
@@ -232,7 +231,7 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
             BlockPos pos = consumerPosition.offset(pair.getFirst().getSide());
             TileEntity te = context.getControllerWorld().getTileEntity(pos);
 
-            Optional<ISlurryHandler> optional = Utils.getSlurryHandlerFor(te, settings.getFacing());
+            Optional<ISlurryHandler> optional = SlurryUtils.getSlurryHandlerFor(te, settings.getFacing());
             if (optional.isPresent()) {
                 ISlurryHandler handler = optional.get();
 
@@ -240,7 +239,7 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
 
                 Integer count = settings.getMinmax();
                 if (count != null) {
-                    long a = Utils.getSlurryCount(handler, settings.getMatcher(), settings.getFacing());
+                    long a = SlurryUtils.getSlurryCount(handler, settings.getFacing(), settings.getMatcher());
                     long caninsert = count - a;
                     if (caninsert <= 0) {
                         continue;
@@ -251,7 +250,7 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
                 SlurryStack copy = stack.copy();
                 copy.setAmount(toInsert);
 
-                SlurryStack remaining = Utils.insertSlurry(handler, copy, settings.getFacing(), Action.EXECUTE);
+                SlurryStack remaining = SlurryUtils.insertSlurry(handler, copy, settings.getFacing(), Action.EXECUTE);
                 if (remaining.isEmpty() || (!remaining.isEmpty() && copy.getAmount() != remaining.getAmount())) {
                     roundRobinOffset = (roundRobinOffset + 1) % slurryConsumers.size();
                     amount -= (copy.getAmount() - remaining.getAmount());

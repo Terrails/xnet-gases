@@ -21,7 +21,6 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import terrails.xnetgases.Utils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -59,7 +58,7 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
 
     @Override
     public void readFromJson(JsonObject data) {
-        channelMode = Utils.getGasChannelModeFrom(data.get("mode").getAsString());
+        channelMode = GasUtils.getChannelModeFrom(data.get("mode").getAsString());
     }
 
     @Override
@@ -103,7 +102,7 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
                     }
 
                     TileEntity te = world.getTileEntity(pos);
-                    Optional<IGasHandler> optional = Utils.getGasHandlerFor(te, settings.getFacing());
+                    Optional<IGasHandler> optional = GasUtils.getGasHandlerFor(te, settings.getFacing());
                     if (optional.isPresent()) {
                         IGasHandler handler = optional.get();
 
@@ -120,7 +119,7 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
 
                         Integer count = settings.getMinmax();
                         if (count != null) {
-                            long amount = Utils.getGasCount(handler, extractMatcher, settings.getFacing());
+                            long amount = GasUtils.getGasCount(handler, settings.getFacing(), extractMatcher);
                             long canExtract = amount - count;
                             if (canExtract <= 0) {
                                 continue;
@@ -131,7 +130,7 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
                         List<Pair<SidedConsumer, GasConnectorSettings>> inserted = new ArrayList<>();
                         long remaining;
                         do {
-                            GasStack stack = Utils.extractGas(handler, toExtract, settings.getFacing(), Action.SIMULATE);
+                            GasStack stack = GasUtils.extractGas(handler, toExtract, settings.getFacing(), Action.SIMULATE);
                             if (stack.isEmpty() || (extractMatcher != null && !extractMatcher.equals(stack)))
                                 continue extractorsLoop;
                             toExtract = stack.getAmount();
@@ -142,7 +141,7 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
                         } while (remaining > 0);
 
                         if (context.checkAndConsumeRF(Config.controllerOperationRFT.get())) {
-                            GasStack stack = Utils.extractGas(handler, toExtract, settings.getFacing(), Action.EXECUTE);
+                            GasStack stack = GasUtils.extractGas(handler, toExtract, settings.getFacing(), Action.EXECUTE);
                             if (stack.isEmpty()) {
                                 throw new NullPointerException(handler.getClass().getName() + " misbehaved! handler.extractGas(" + toExtract + ", Action.SIMULATE) returned null, even though handler.extractGas(" + toExtract + ", Action.EXECUTE) did not");
                             }
@@ -187,7 +186,7 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
                     BlockPos pos = consumerPos.offset(entry.getFirst().getSide());
                     TileEntity te = world.getTileEntity(pos);
 
-                    Optional<IGasHandler> optional = Utils.getGasHandlerFor(te, settings.getFacing());
+                    Optional<IGasHandler> optional = GasUtils.getGasHandlerFor(te, settings.getFacing());
                     if (optional.isPresent()) {
                         IGasHandler handler = optional.get();
 
@@ -195,7 +194,7 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
 
                         Integer count = settings.getMinmax();
                         if (count != null) {
-                            long a = Utils.getGasCount(handler, settings.getMatcher(), settings.getFacing());
+                            long a = GasUtils.getGasCount(handler, settings.getFacing(), settings.getMatcher());
                             long canInsert = count - a;
                             if (canInsert <= 0) {
                                 continue;
@@ -206,7 +205,7 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
                         GasStack copy = stack.copy();
                         copy.setAmount(toInsert);
 
-                        GasStack remaining = Utils.insertGas(handler, copy, settings.getFacing(), Action.SIMULATE);
+                        GasStack remaining = GasUtils.insertGas(handler, copy, settings.getFacing(), Action.SIMULATE);
                         if (remaining.isEmpty() || (!remaining.isEmpty() && copy.getAmount() != remaining.getAmount())) {
                             inserted.add(entry);
                             amount -= (copy.getAmount() - remaining.getAmount());
@@ -232,7 +231,7 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
             BlockPos pos = consumerPosition.offset(pair.getFirst().getSide());
             TileEntity te = context.getControllerWorld().getTileEntity(pos);
 
-            Optional<IGasHandler> optional = Utils.getGasHandlerFor(te, settings.getFacing());
+            Optional<IGasHandler> optional = GasUtils.getGasHandlerFor(te, settings.getFacing());
             if (optional.isPresent()) {
                 IGasHandler handler = optional.get();
 
@@ -240,7 +239,7 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
 
                 Integer count = settings.getMinmax();
                 if (count != null) {
-                    long a = Utils.getGasCount(handler, settings.getMatcher(), settings.getFacing());
+                    long a = GasUtils.getGasCount(handler, settings.getFacing(), settings.getMatcher());
                     long caninsert = count - a;
                     if (caninsert <= 0) {
                         continue;
@@ -251,7 +250,7 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
                 GasStack copy = stack.copy();
                 copy.setAmount(toInsert);
 
-                GasStack remaining = Utils.insertGas(handler, copy, settings.getFacing(), Action.EXECUTE);
+                GasStack remaining = GasUtils.insertGas(handler, copy, settings.getFacing(), Action.EXECUTE);
                 if (remaining.isEmpty() || (!remaining.isEmpty() && copy.getAmount() != remaining.getAmount())) {
                     roundRobinOffset = (roundRobinOffset + 1) % gasConsumers.size();
                     amount -= (copy.getAmount() - remaining.getAmount());

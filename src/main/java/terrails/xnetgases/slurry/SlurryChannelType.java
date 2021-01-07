@@ -6,7 +6,6 @@ import mcjty.rftoolsbase.api.xnet.channels.IConnectorSettings;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import terrails.xnetgases.Utils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -25,7 +24,7 @@ public class SlurryChannelType implements IChannelType {
 
     @Override
     public boolean supportsBlock(@Nonnull World world, @Nonnull BlockPos pos, @Nullable Direction direction) {
-        return Utils.getSlurryHandlerFor(world.getTileEntity(pos), direction).isPresent();
+        return SlurryUtils.getSlurryHandlerFor(world.getTileEntity(pos), direction).isPresent();
     }
 
     @Nonnull
