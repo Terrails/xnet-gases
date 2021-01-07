@@ -15,6 +15,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import terrails.xnetgases.gas.GasChannelType;
 import terrails.xnetgases.gas.GasConnectable;
+import terrails.xnetgases.logic.XGLogicChannelType;
 
 import java.nio.file.Path;
 
@@ -40,6 +41,8 @@ public class XNetGases {
 
         XNet.xNetApi.registerChannelType(new GasChannelType());
         XNet.xNetApi.registerConnectable(new GasConnectable());
+
+        XNet.xNetApi.registerChannelType(new XGLogicChannelType());
     }
 
     static {
@@ -47,10 +50,10 @@ public class XNetGases {
         builder.comment("General settings").push("general");
 
         maxGasRateNormal = builder
-                .comment("Maximum gas per operation that a normal connector can input or output")
+                .comment("Maximum gas/slurry per operation that a normal connector can input or output")
                 .defineInRange("maxGasRateNormal", 1000, 1, 1000000000);
         maxGasRateAdvanced = builder
-                .comment("Maximum gas per operation that an advanced connector can input or output")
+                .comment("Maximum gas/slurry per operation that an advanced connector can input or output")
                 .defineInRange("maxGasRateAdvanced", 5000, 1, 1000000000);
 
         CONFIG_SPEC = builder.pop().build();

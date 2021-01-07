@@ -16,7 +16,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.Direction;
 import net.minecraft.util.ResourceLocation;
-import terrails.xnetgases.Utils;
 import terrails.xnetgases.XNetGases;
 
 import javax.annotation.Nonnull;
@@ -197,7 +196,7 @@ public class GasConnectorSettings extends AbstractConnectorSettings {
     @Override
     public void readFromJson(JsonObject object) {
         super.readFromJsonInternal(object);
-        gasMode = getEnumSafe(object, "gasmode", Utils::getConnectorModeFrom);
+        gasMode = getEnumSafe(object, "gasmode", GasUtils::getConnectorModeFrom);
         priority = getIntegerSafe(object, "priority");
         rate = getIntegerSafe(object, "rate");
         minmax = getIntegerSafe(object, "minmax");

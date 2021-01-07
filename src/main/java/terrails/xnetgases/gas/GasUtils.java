@@ -1,22 +1,22 @@
-package terrails.xnetgases;
+package terrails.xnetgases.gas;
 
 import mekanism.api.Action;
+import mekanism.api.chemical.gas.Gas;
 import mekanism.api.chemical.gas.GasStack;
 import mekanism.api.chemical.gas.IGasHandler;
 import mekanism.api.chemical.gas.ISidedGasHandler;
 import mekanism.common.capabilities.Capabilities;
 import net.minecraft.util.Direction;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
-import terrails.xnetgases.gas.GasChannelSettings;
-import terrails.xnetgases.gas.GasConnectorSettings;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
 
-public class Utils {
+public class GasUtils {
 
     private static Map<String, GasConnectorSettings.GasMode> connectorModeCache;
     private static Map<String, GasChannelSettings.ChannelMode> channelModeCache;
@@ -73,23 +73,40 @@ public class Utils {
         } else return handler.extractGas(amount, action);
     }
 
-    public static long getGasCount(@Nonnull IGasHandler handler, @Nullable GasStack matcher, @Nullable Direction direction) {
-        int count = 0;
+    public static long getGasCount(@Nonnull IGasHandler handler, @Nullable Direction direction, @Nullable Predicate<GasStack> filter) {
+        long count = 0;
         if (direction != null && handler instanceof ISidedGasHandler) {
             for (int i = 0; i < ((ISidedGasHandler) handler).getGasTankCount(direction); i++) {
                 GasStack stack = ((ISidedGasHandler) handler).getGasInTank(i, direction);
-                if (!stack.isEmpty() && (matcher == null || matcher.equals(stack))) {
+                if (!stack.isEmpty() && (filter == null || filter.test(stack))) {
                     count += stack.getAmount();
                 }
             }
         } else {
             for (int i = 0; i < handler.getGasTankCount(); i++) {
                 GasStack stack = handler.getGasInTank(i);
-                if (!stack.isEmpty() && (matcher == null || matcher.equals(stack))) {
+                if (!stack.isEmpty() && (filter == null || filter.test(stack))) {
                     count += stack.getAmount();
                 }
             }
         }
         return count;
     }
+
+    public static long getGasCount(@Nonnull IGasHandler handler, @Nullable Direction direction, @Nullable Gas filter) {
+        return getGasCount(handler, direction, (stack) -> stack.getType() == filter);
+    }
+
+    public static long getGasCount(@Nonnull IGasHandler handler, @Nullable Direction direction, @Nullable GasStack filter) {
+        return getGasCount(handler, direction, (stack) -> stack.equals(filter));
+    }
+
+    public static long getGasCount(@Nonnull IGasHandler handler, @Nullable Direction direction) {
+        return getGasCount(handler, direction, (Predicate<GasStack>) null);
+    }
+
+    public static long getGasCount(@Nonnull IGasHandler handler) {
+        return getGasCount(handler, null, (Predicate<GasStack>) null);
+    }
+
 }
