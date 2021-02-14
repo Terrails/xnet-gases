@@ -60,7 +60,7 @@ dependencies {
     // XNet
     compile fg.deobf("curse.maven:xnet-260912:3140153") // 1.16-3.0.11
     compile fg.deobf("curse.maven:rftools-base-326041:3140147") // 1.16-2.0.9
-    compile fg.deobf("curse.maven:mcjtylib-233105:31943493194349") // 1.16-5.0.16
+    compile fg.deobf("curse.maven:mcjtylib-233105:3194349") // 1.16-5.0.16
 
     // Mekanism
     compile fg.deobf("curse.maven:mekanism-268560:3202681") // 1.16.4-10.0.20.447
