@@ -94,11 +94,11 @@ public class SlurryUtils {
     }
 
     public static long getSlurryCount(@Nonnull ISlurryHandler handler, @Nullable Direction direction, @Nullable Slurry filter) {
-        return getSlurryCount(handler, direction, (stack) -> stack.getType() == filter);
+        return getSlurryCount(handler, direction, (stack) -> filter == null || stack.getType() == filter);
     }
 
     public static long getSlurryCount(@Nonnull ISlurryHandler handler, @Nullable Direction direction, @Nullable SlurryStack filter) {
-        return getSlurryCount(handler, direction, (stack) -> stack.equals(filter));
+        return getSlurryCount(handler, direction, (stack) -> filter == null || stack.equals(filter));
     }
 
     public static long getSlurryCount(@Nonnull ISlurryHandler handler, @Nullable Direction direction) {

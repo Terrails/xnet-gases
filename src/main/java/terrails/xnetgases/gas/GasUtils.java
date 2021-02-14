@@ -94,11 +94,11 @@ public class GasUtils {
     }
 
     public static long getGasCount(@Nonnull IGasHandler handler, @Nullable Direction direction, @Nullable Gas filter) {
-        return getGasCount(handler, direction, (stack) -> stack.getType() == filter);
+        return getGasCount(handler, direction, (stack) -> filter == null || stack.getType() == filter);
     }
 
     public static long getGasCount(@Nonnull IGasHandler handler, @Nullable Direction direction, @Nullable GasStack filter) {
-        return getGasCount(handler, direction, (stack) -> stack.equals(filter));
+        return getGasCount(handler, direction, (stack) -> filter == null || stack.equals(filter));
     }
 
     public static long getGasCount(@Nonnull IGasHandler handler, @Nullable Direction direction) {
