@@ -11,9 +11,7 @@ import net.minecraftforge.common.capabilities.ICapabilityProvider;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Predicate;
 
 public class GasUtils {
@@ -61,21 +59,39 @@ public class GasUtils {
 
     @Nonnull
     public static GasStack insertGas(IGasHandler handler, GasStack stack, @Nullable Direction direction, Action action) {
-        if (direction != null && handler instanceof ISidedGasHandler) {
+        if (handler instanceof ISidedGasHandler) {
             return ((ISidedGasHandler) handler).insertChemical(stack, direction, action);
         } else return handler.insertChemical(stack, action);
     }
 
     @Nonnull
     public static GasStack extractGas(IGasHandler handler, long amount, @Nullable Direction direction, Action action) {
-        if (direction != null && handler instanceof ISidedGasHandler) {
+        if (handler instanceof ISidedGasHandler) {
             return ((ISidedGasHandler) handler).extractChemical(amount, direction, action);
         } else return handler.extractChemical(amount, action);
     }
 
+    public static List<Gas> getGasInTank(@Nonnull IGasHandler handler, @Nullable Direction direction) {
+        List<Gas> gases = new ArrayList<>();
+        if (handler instanceof ISidedGasHandler) {
+            for (int i = 0; i < ((ISidedGasHandler) handler).getTanks(direction); i++) {
+                gases.add(((ISidedGasHandler) handler).getChemicalInTank(i, direction).getType());
+            }
+        } else {
+            for (int i = 0; i < handler.getTanks(); i++) {
+                gases.add(handler.getChemicalInTank(i).getType());
+            }
+        }
+        return gases;
+    }
+
+    public static List<Gas> getGasInTank(@Nonnull IGasHandler handler) {
+        return getGasInTank(handler, null);
+    }
+
     public static long getGasCount(@Nonnull IGasHandler handler, @Nullable Direction direction, @Nullable Predicate<GasStack> filter) {
         long count = 0;
-        if (direction != null && handler instanceof ISidedGasHandler) {
+        if (handler instanceof ISidedGasHandler) {
             for (int i = 0; i < ((ISidedGasHandler) handler).getTanks(direction); i++) {
                 GasStack stack = ((ISidedGasHandler) handler).getChemicalInTank(i, direction);
                 if (!stack.isEmpty() && (filter == null || filter.test(stack))) {

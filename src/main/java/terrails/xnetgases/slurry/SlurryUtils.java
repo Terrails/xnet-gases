@@ -11,9 +11,7 @@ import net.minecraftforge.common.capabilities.ICapabilityProvider;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Predicate;
 
 public class SlurryUtils {
@@ -61,21 +59,39 @@ public class SlurryUtils {
 
     @Nonnull
     public static SlurryStack insertSlurry(ISlurryHandler handler, SlurryStack stack, @Nullable Direction direction, Action action) {
-        if (direction != null && handler instanceof ISidedSlurryHandler) {
+        if (handler instanceof ISidedSlurryHandler) {
             return ((ISidedSlurryHandler) handler).insertChemical(stack, direction, action);
         } else return handler.insertChemical(stack, action);
     }
 
     @Nonnull
     public static SlurryStack extractSlurry(ISlurryHandler handler, long amount, @Nullable Direction direction, Action action) {
-        if (direction != null && handler instanceof ISidedSlurryHandler) {
+        if (handler instanceof ISidedSlurryHandler) {
             return ((ISidedSlurryHandler) handler).extractChemical(amount, direction, action);
         } else return handler.extractChemical(amount, action);
     }
 
+    public static List<Slurry> getSlurryInTank(@Nonnull ISlurryHandler handler, @Nullable Direction direction) {
+        List<Slurry> slurries = new ArrayList<>();
+        if (handler instanceof ISidedSlurryHandler) {
+            for (int i = 0; i < ((ISidedSlurryHandler) handler).getTanks(direction); i++) {
+                slurries.add(((ISidedSlurryHandler) handler).getChemicalInTank(i, direction).getType());
+            }
+        } else {
+            for (int i = 0; i < handler.getTanks(); i++) {
+                slurries.add(handler.getChemicalInTank(i).getType());
+            }
+        }
+        return slurries;
+    }
+
+    public static List<Slurry> getSlurryInTank(@Nonnull ISlurryHandler handler) {
+        return getSlurryInTank(handler, null);
+    }
+
     public static long getSlurryCount(@Nonnull ISlurryHandler handler, @Nullable Direction direction, @Nullable Predicate<SlurryStack> filter) {
         long count = 0;
-        if (direction != null && handler instanceof ISidedSlurryHandler) {
+        if (handler instanceof ISidedSlurryHandler) {
             for (int i = 0; i < ((ISidedSlurryHandler) handler).getTanks(direction); i++) {
                 SlurryStack stack = ((ISidedSlurryHandler) handler).getChemicalInTank(i, direction);
                 if (!stack.isEmpty() && (filter == null || filter.test(stack))) {

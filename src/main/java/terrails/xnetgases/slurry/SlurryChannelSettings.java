@@ -15,6 +15,7 @@ import mcjty.xnet.XNet;
 import mcjty.xnet.setup.Config;
 import mekanism.api.Action;
 import mekanism.api.chemical.slurry.ISlurryHandler;
+import mekanism.api.chemical.slurry.Slurry;
 import mekanism.api.chemical.slurry.SlurryStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
@@ -41,7 +42,7 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
     private int delay;
     private int roundRobinOffset;
 
-    private Map<SidedConsumer, SlurryConnectorSettings> slurryExtractors;
+    private List<Pair<SidedConsumer, SlurryConnectorSettings>> slurryExtractors;
     private List<Pair<SidedConsumer, SlurryConnectorSettings>> slurryConsumers;
 
     public SlurryChannelSettings() {
@@ -88,15 +89,16 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
 
             World world = context.getControllerWorld();
             extractorsLoop:
-            for (Map.Entry<SidedConsumer, SlurryConnectorSettings> entry : slurryExtractors.entrySet()) {
-                SlurryConnectorSettings settings = entry.getValue();
+            for (Pair<SidedConsumer, SlurryConnectorSettings> entry : slurryExtractors) {
+                SidedConsumer consumer = entry.getFirst();
+                SlurryConnectorSettings settings = entry.getSecond();
                 if (d % settings.getSpeed() != 0) {
                     continue;
                 }
 
-                BlockPos extractorPos = context.findConsumerPosition(entry.getKey().getConsumerId());
+                BlockPos extractorPos = context.findConsumerPosition(consumer.getConsumerId());
                 if (extractorPos != null) {
-                    BlockPos pos = extractorPos.offset(entry.getKey().getSide());
+                    BlockPos pos = extractorPos.offset(consumer.getSide());
                     if (!WorldTools.isLoaded(world, pos)) {
                         continue;
                     }
@@ -125,6 +127,49 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
                                 continue;
                             }
                             toExtract = Math.min(toExtract, canExtract);
+                        }
+
+                        if (channelMode == ChannelMode.PRIORITY) {
+
+                            // Skip current extractor if there is one with the same slurry but higher priority.
+                            if (slurryExtractors.stream().anyMatch(_entry -> {
+                                SidedConsumer _consumer = _entry.getFirst();
+                                SlurryConnectorSettings _settings = _entry.getSecond();
+
+                                if (_settings.getPriority() <= settings.getPriority()) {
+                                    return false;
+                                }
+
+                                BlockPos _extractorPos = context.findConsumerPosition(_consumer.getConsumerId());
+                                if (_extractorPos == null) {
+                                    return false;
+                                }
+
+                                BlockPos _pos = _extractorPos.offset(_consumer.getSide());
+                                if (!WorldTools.isLoaded(world, _pos)) {
+                                    return false;
+                                }
+
+                                Optional<ISlurryHandler> _optional = SlurryUtils.getSlurryHandlerFor(world.getTileEntity(_pos), _settings.getFacing());
+                                if (_optional.isPresent()) {
+                                    ISlurryHandler _handler = _optional.get();
+
+                                    List<Slurry> handlerSlurries = SlurryUtils.getSlurryInTank(handler, consumer.getSide());
+                                    List<Slurry> _handlerSlurries = SlurryUtils.getSlurryInTank(_handler, _consumer.getSide());
+
+                                    if (Collections.disjoint(handlerSlurries, _handlerSlurries)) {
+                                        return false;
+                                    }
+
+                                    SlurryStack matcher = settings.getMatcher();
+                                    SlurryStack _matcher = _settings.getMatcher();
+
+                                    return (matcher == null || handlerSlurries.contains(matcher.getType())) && (_matcher == null || _handlerSlurries.contains(_matcher.getType()));
+                                }
+                                return false;
+                            })) {
+                                continue;
+                            }
                         }
 
                         List<Pair<SidedConsumer, SlurryConnectorSettings>> inserted = new ArrayList<>();
@@ -264,20 +309,20 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
 
     private void updateCache(int channel, IControllerContext context) {
         if (this.slurryExtractors == null) {
-            this.slurryExtractors = new HashMap<>();
+            this.slurryExtractors = new ArrayList<>();
             this.slurryConsumers = new ArrayList<>();
+
             Map<SidedConsumer, IConnectorSettings> connectors = context.getConnectors(channel);
             Iterator<Map.Entry<SidedConsumer, IConnectorSettings>> iterator = connectors.entrySet().iterator();
 
-            Map.Entry<SidedConsumer, IConnectorSettings> entry;
-            SlurryConnectorSettings con;
             while (iterator.hasNext()) {
-                entry = iterator.next();
-                con = (SlurryConnectorSettings) entry.getValue();
-                if (con.getSlurryMode() == SlurryConnectorSettings.SlurryMode.EXT) {
-                    this.slurryExtractors.put(entry.getKey(), con);
+                Map.Entry<SidedConsumer, IConnectorSettings> entry = iterator.next();
+                SidedConsumer consumer = entry.getKey();
+                SlurryConnectorSettings settings = (SlurryConnectorSettings) entry.getValue();
+                if (settings.getSlurryMode() == SlurryConnectorSettings.SlurryMode.EXT) {
+                    this.slurryExtractors.add(Pair.of(consumer, settings));
                 } else {
-                    this.slurryConsumers.add(Pair.of(entry.getKey(), con));
+                    this.slurryConsumers.add(Pair.of(consumer, settings));
                 }
             }
 
@@ -285,10 +330,11 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
             iterator = connectors.entrySet().iterator();
 
             while (iterator.hasNext()) {
-                entry = iterator.next();
-                con = (SlurryConnectorSettings) entry.getValue();
-                if (con.getSlurryMode() == SlurryConnectorSettings.SlurryMode.INS) {
-                    this.slurryConsumers.add(Pair.of(entry.getKey(), con));
+                Map.Entry<SidedConsumer, IConnectorSettings> entry = iterator.next();
+                SidedConsumer consumer = entry.getKey();
+                SlurryConnectorSettings settings = (SlurryConnectorSettings) entry.getValue();
+                if (settings.getSlurryMode() == SlurryConnectorSettings.SlurryMode.INS) {
+                    this.slurryConsumers.add(Pair.of(consumer, settings));
                 }
             }
 

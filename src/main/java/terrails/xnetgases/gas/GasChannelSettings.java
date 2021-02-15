@@ -14,6 +14,7 @@ import mcjty.rftoolsbase.api.xnet.keys.SidedConsumer;
 import mcjty.xnet.XNet;
 import mcjty.xnet.setup.Config;
 import mekanism.api.Action;
+import mekanism.api.chemical.gas.Gas;
 import mekanism.api.chemical.gas.GasStack;
 import mekanism.api.chemical.gas.IGasHandler;
 import net.minecraft.nbt.CompoundNBT;
@@ -41,7 +42,7 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
     private int delay;
     private int roundRobinOffset;
 
-    private Map<SidedConsumer, GasConnectorSettings> gasExtractors;
+    private List<Pair<SidedConsumer, GasConnectorSettings>> gasExtractors;
     private List<Pair<SidedConsumer, GasConnectorSettings>> gasConsumers;
 
     public GasChannelSettings() {
@@ -88,15 +89,16 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
 
             World world = context.getControllerWorld();
             extractorsLoop:
-            for (Map.Entry<SidedConsumer, GasConnectorSettings> entry : gasExtractors.entrySet()) {
-                GasConnectorSettings settings = entry.getValue();
+            for (Pair<SidedConsumer, GasConnectorSettings> entry : gasExtractors) {
+                SidedConsumer consumer = entry.getFirst();
+                GasConnectorSettings settings = entry.getSecond();
                 if (d % settings.getSpeed() != 0) {
                     continue;
                 }
 
-                BlockPos extractorPos = context.findConsumerPosition(entry.getKey().getConsumerId());
+                BlockPos extractorPos = context.findConsumerPosition(consumer.getConsumerId());
                 if (extractorPos != null) {
-                    BlockPos pos = extractorPos.offset(entry.getKey().getSide());
+                    BlockPos pos = extractorPos.offset(consumer.getSide());
                     if (!WorldTools.isLoaded(world, pos)) {
                         continue;
                     }
@@ -125,6 +127,49 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
                                 continue;
                             }
                             toExtract = Math.min(toExtract, canExtract);
+                        }
+
+                        if (channelMode == ChannelMode.PRIORITY) {
+
+                            // Skip current extractor if there is one with the same gas but higher priority.
+                            if (gasExtractors.stream().anyMatch(_entry -> {
+                                SidedConsumer _consumer = _entry.getFirst();
+                                GasConnectorSettings _settings = _entry.getSecond();
+
+                                if (_settings.getPriority() <= settings.getPriority()) {
+                                    return false;
+                                }
+
+                                BlockPos _extractorPos = context.findConsumerPosition(_consumer.getConsumerId());
+                                if (_extractorPos == null) {
+                                    return false;
+                                }
+
+                                BlockPos _pos = _extractorPos.offset(_consumer.getSide());
+                                if (!WorldTools.isLoaded(world, _pos)) {
+                                    return false;
+                                }
+
+                                Optional<IGasHandler> _optional = GasUtils.getGasHandlerFor(world.getTileEntity(_pos), _settings.getFacing());
+                                if (_optional.isPresent()) {
+                                    IGasHandler _handler = _optional.get();
+
+                                    List<Gas> handlerGases = GasUtils.getGasInTank(handler, consumer.getSide());
+                                    List<Gas> _handlerGases = GasUtils.getGasInTank(_handler, _consumer.getSide());
+
+                                    if (Collections.disjoint(handlerGases, _handlerGases)) {
+                                        return false;
+                                    }
+
+                                    GasStack matcher = settings.getMatcher();
+                                    GasStack _matcher = _settings.getMatcher();
+
+                                    return (matcher == null || handlerGases.contains(matcher.getType())) && (_matcher == null || _handlerGases.contains(_matcher.getType()));
+                                }
+                                return false;
+                            })) {
+                                continue;
+                            }
                         }
 
                         List<Pair<SidedConsumer, GasConnectorSettings>> inserted = new ArrayList<>();
@@ -264,20 +309,20 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
 
     private void updateCache(int channel, IControllerContext context) {
         if (this.gasExtractors == null) {
-            this.gasExtractors = new HashMap<>();
+            this.gasExtractors = new ArrayList<>();
             this.gasConsumers = new ArrayList<>();
+
             Map<SidedConsumer, IConnectorSettings> connectors = context.getConnectors(channel);
             Iterator<Map.Entry<SidedConsumer, IConnectorSettings>> iterator = connectors.entrySet().iterator();
 
-            Map.Entry<SidedConsumer, IConnectorSettings> entry;
-            GasConnectorSettings con;
             while (iterator.hasNext()) {
-                entry = iterator.next();
-                con = (GasConnectorSettings) entry.getValue();
-                if (con.getGasMode() == GasConnectorSettings.GasMode.EXT) {
-                    this.gasExtractors.put(entry.getKey(), con);
+                Map.Entry<SidedConsumer, IConnectorSettings> entry = iterator.next();
+                SidedConsumer consumer = entry.getKey();
+                GasConnectorSettings settings = (GasConnectorSettings) entry.getValue();
+                if (settings.getGasMode() == GasConnectorSettings.GasMode.EXT) {
+                    this.gasExtractors.add(Pair.of(consumer, settings));
                 } else {
-                    this.gasConsumers.add(Pair.of(entry.getKey(), con));
+                    this.gasConsumers.add(Pair.of(entry.getKey(), settings));
                 }
             }
 
@@ -285,10 +330,11 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
             iterator = connectors.entrySet().iterator();
 
             while (iterator.hasNext()) {
-                entry = iterator.next();
-                con = (GasConnectorSettings) entry.getValue();
-                if (con.getGasMode() == GasConnectorSettings.GasMode.INS) {
-                    this.gasConsumers.add(Pair.of(entry.getKey(), con));
+                Map.Entry<SidedConsumer, IConnectorSettings> entry = iterator.next();
+                SidedConsumer consumer = entry.getKey();
+                GasConnectorSettings settings = (GasConnectorSettings) entry.getValue();
+                if (settings.getGasMode() == GasConnectorSettings.GasMode.INS) {
+                    this.gasConsumers.add(Pair.of(consumer, settings));
                 }
             }
 
