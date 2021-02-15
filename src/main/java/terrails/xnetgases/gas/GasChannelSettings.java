@@ -131,7 +131,7 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
 
                         if (channelMode == ChannelMode.PRIORITY) {
 
-                            // Skip current extractor if there is one with the same gas but higher priority.
+                            // Skip current extractor if there is one with the same gas but has higher priority.
                             if (gasExtractors.stream().anyMatch(_entry -> {
                                 SidedConsumer _consumer = _entry.getFirst();
                                 GasConnectorSettings _settings = _entry.getSecond();
@@ -206,17 +206,15 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
 
     private long insertGasSimulate(@Nonnull List<Pair<SidedConsumer, GasConnectorSettings>> inserted, @Nonnull IControllerContext context, @Nonnull GasStack stack) {
         World world = context.getControllerWorld();
-        if (channelMode == ChannelMode.PRIORITY) {
-            roundRobinOffset = 0;
-        }
         long amount = stack.getAmount();
         for (int j = 0; j < gasConsumers.size(); j++) {
             int i = (j + roundRobinOffset) % gasConsumers.size();
             Pair<SidedConsumer, GasConnectorSettings> entry = gasConsumers.get(i);
+            SidedConsumer consumer = entry.getFirst();
             GasConnectorSettings settings = entry.getSecond();
 
             if (settings.getMatcher() == null || settings.getMatcher().equals(stack)) {
-                BlockPos consumerPos = context.findConsumerPosition(entry.getFirst().getConsumerId());
+                BlockPos consumerPos = context.findConsumerPosition(consumer.getConsumerId());
                 if (consumerPos != null) {
                     if (!WorldTools.isLoaded(world, consumerPos)) {
                         continue;
@@ -228,7 +226,7 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
                         continue;
                     }
 
-                    BlockPos pos = consumerPos.offset(entry.getFirst().getSide());
+                    BlockPos pos = consumerPos.offset(consumer.getSide());
                     TileEntity te = world.getTileEntity(pos);
 
                     Optional<IGasHandler> optional = GasUtils.getGasHandlerFor(te, settings.getFacing());
@@ -245,6 +243,49 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
                                 continue;
                             }
                             toInsert = Math.min(toInsert, canInsert);
+                        }
+
+                        if (channelMode == ChannelMode.PRIORITY) {
+
+                            // Skip current consumer if there is one that accepts the same gas but has higher priority.
+                            if (gasConsumers.stream().anyMatch(_entry -> {
+                                SidedConsumer _consumer = _entry.getFirst();
+                                GasConnectorSettings _settings = _entry.getSecond();
+
+                                if (_settings.getPriority() <= settings.getPriority()) {
+                                    return false;
+                                }
+
+                                BlockPos _extractorPos = context.findConsumerPosition(_consumer.getConsumerId());
+                                if (_extractorPos == null) {
+                                    return false;
+                                }
+
+                                BlockPos _pos = _extractorPos.offset(_consumer.getSide());
+                                if (!WorldTools.isLoaded(world, _pos)) {
+                                    return false;
+                                }
+
+                                Optional<IGasHandler> _optional = GasUtils.getGasHandlerFor(world.getTileEntity(_pos), _settings.getFacing());
+                                if (_optional.isPresent()) {
+                                    IGasHandler _handler = _optional.get();
+
+                                    List<Gas> handlerGases = GasUtils.getGasInTank(handler, consumer.getSide());
+                                    List<Gas> _handlerGases = GasUtils.getGasInTank(_handler, _consumer.getSide());
+
+                                    if (Collections.disjoint(handlerGases, _handlerGases)) {
+                                        return false;
+                                    }
+
+                                    GasStack matcher = settings.getMatcher();
+                                    GasStack _matcher = _settings.getMatcher();
+
+                                    return (matcher == null || handlerGases.contains(matcher.getType())) && (_matcher == null || _handlerGases.contains(_matcher.getType()));
+                                }
+                                return false;
+                            })) {
+                                continue;
+                            }
                         }
 
                         GasStack copy = stack.copy();

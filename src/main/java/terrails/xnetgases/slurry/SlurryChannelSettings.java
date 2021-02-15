@@ -206,17 +206,15 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
 
     private long insertSlurrySimulate(@Nonnull List<Pair<SidedConsumer, SlurryConnectorSettings>> inserted, @Nonnull IControllerContext context, @Nonnull SlurryStack stack) {
         World world = context.getControllerWorld();
-        if (channelMode == SlurryChannelSettings.ChannelMode.PRIORITY) {
-            roundRobinOffset = 0;
-        }
         long amount = stack.getAmount();
         for (int j = 0; j < slurryConsumers.size(); j++) {
             int i = (j + roundRobinOffset) % slurryConsumers.size();
             Pair<SidedConsumer, SlurryConnectorSettings> entry = slurryConsumers.get(i);
+            SidedConsumer consumer = entry.getFirst();
             SlurryConnectorSettings settings = entry.getSecond();
 
             if (settings.getMatcher() == null || settings.getMatcher().equals(stack)) {
-                BlockPos consumerPos = context.findConsumerPosition(entry.getFirst().getConsumerId());
+                BlockPos consumerPos = context.findConsumerPosition(consumer.getConsumerId());
                 if (consumerPos != null) {
                     if (!WorldTools.isLoaded(world, consumerPos)) {
                         continue;
@@ -228,7 +226,7 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
                         continue;
                     }
 
-                    BlockPos pos = consumerPos.offset(entry.getFirst().getSide());
+                    BlockPos pos = consumerPos.offset(consumer.getSide());
                     TileEntity te = world.getTileEntity(pos);
 
                     Optional<ISlurryHandler> optional = SlurryUtils.getSlurryHandlerFor(te, settings.getFacing());
@@ -245,6 +243,49 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
                                 continue;
                             }
                             toInsert = Math.min(toInsert, canInsert);
+                        }
+
+                        if (channelMode == ChannelMode.PRIORITY) {
+
+                            // Skip current consumer if there is one that accepts the same gas but has higher priority
+                            if (slurryConsumers.stream().anyMatch(_entry -> {
+                                SidedConsumer _consumer = _entry.getFirst();
+                                SlurryConnectorSettings _settings = _entry.getSecond();
+
+                                if (_settings.getPriority() <= settings.getPriority()) {
+                                    return false;
+                                }
+
+                                BlockPos _extractorPos = context.findConsumerPosition(_consumer.getConsumerId());
+                                if (_extractorPos == null) {
+                                    return false;
+                                }
+
+                                BlockPos _pos = _extractorPos.offset(_consumer.getSide());
+                                if (!WorldTools.isLoaded(world, _pos)) {
+                                    return false;
+                                }
+
+                                Optional<ISlurryHandler> _optional = SlurryUtils.getSlurryHandlerFor(world.getTileEntity(_pos), _settings.getFacing());
+                                if (_optional.isPresent()) {
+                                    ISlurryHandler _handler = _optional.get();
+
+                                    List<Slurry> handlerSlurries = SlurryUtils.getSlurryInTank(handler, consumer.getSide());
+                                    List<Slurry> _handlerSlurries = SlurryUtils.getSlurryInTank(_handler, _consumer.getSide());
+
+                                    if (Collections.disjoint(handlerSlurries, _handlerSlurries)) {
+                                        return false;
+                                    }
+
+                                    SlurryStack matcher = settings.getMatcher();
+                                    SlurryStack _matcher = _settings.getMatcher();
+
+                                    return (matcher == null || handlerSlurries.contains(matcher.getType())) && (_matcher == null || _handlerSlurries.contains(_matcher.getType()));
+                                }
+                                return false;
+                            })) {
+                                continue;
+                            }
                         }
 
                         SlurryStack copy = stack.copy();
