@@ -28,16 +28,24 @@ public class XGLogicConnectorSettings extends AbstractConnectorSettings {
     public static final String TAG_SPEED = "speed";
     public static final String TAG_REDSTONE_OUT = "rsout";
 
+    public enum LogicMode {
+        SENSOR,
+        OUTPUT
+    }
+
     public static final int SENSORS = 4;
+
+    private LogicMode logicMode = LogicMode.SENSOR;
     private final List<XGSensor> sensors;
 
     private int colors;
     private int speed = 2;
+    private Integer redstoneOut;
 
     public XGLogicConnectorSettings(@Nonnull Direction side) {
         super(side);
         sensors = new ArrayList<>(SENSORS);
-        for (int i = 0 ; i < SENSORS ; i++) {
+        for (int i = 0; i < SENSORS; i++) {
             sensors.add(new XGSensor(i));
         }
     }
@@ -54,10 +62,20 @@ public class XGLogicConnectorSettings extends AbstractConnectorSettings {
         return colors;
     }
 
+    public Integer getRedstoneOut() {
+        return redstoneOut;
+    }
+
     @Nullable
     @Override
     public IndicatorIcon getIndicatorIcon() {
-        return new IndicatorIcon(iconGuiElements, 26, 70, 13, 10);
+        switch (logicMode) {
+            case SENSOR:
+                return new IndicatorIcon(iconGuiElements, 26, 70, 13, 10);
+            case OUTPUT:
+                return new IndicatorIcon(iconGuiElements, 39, 70, 13, 10);
+        }
+        return null;
     }
 
     @Nullable
@@ -71,7 +89,7 @@ public class XGLogicConnectorSettings extends AbstractConnectorSettings {
     @Override
     public boolean isEnabled(String tag) {
         if (tag.equals(TAG_FACING)) {
-            return advanced;
+            return advanced && logicMode != LogicMode.OUTPUT;
         }
         if (tag.equals(TAG_SPEED)) {
             return true;
@@ -89,6 +107,10 @@ public class XGLogicConnectorSettings extends AbstractConnectorSettings {
         return speed;
     }
 
+    public LogicMode getLogicMode() {
+        return logicMode;
+    }
+
     @Override
     public void createGui(IEditorGui gui) {
         advanced = gui.isAdvanced();
@@ -101,21 +123,41 @@ public class XGLogicConnectorSettings extends AbstractConnectorSettings {
         sideGui(gui);
         colorsGui(gui);
         redstoneGui(gui);
-        gui.nl().choices(TAG_SPEED, "Number of ticks for each check", Integer.toString(speed * 5), speeds).nl();
-        for (XGSensor sensor : sensors) {
-            sensor.createGui(gui);
+        gui.nl()
+                .choices(TAG_MODE, "Sensor or Output mode", logicMode, LogicMode.values())
+                .choices(TAG_SPEED, (logicMode == LogicMode.SENSOR ? "Number of ticks for each check" : "Number of ticks for each operation"), Integer.toString(speed * 5), speeds)
+                .nl();
+
+        switch (logicMode) {
+            case SENSOR:
+                for (XGSensor sensor : sensors) {
+                    sensor.createGui(gui);
+                }
+                break;
+            case OUTPUT:
+                gui.label("Redstone:")
+                        .integer(TAG_REDSTONE_OUT, "Redstone output value", redstoneOut, 40, 16)
+                        .nl();
+                break;
         }
+
     }
 
     @Override
     public void update(Map<String, Object> data) {
         super.update(data);
+        logicMode = LogicMode.valueOf(((String)data.get(TAG_MODE)).toUpperCase());
+
         speed = Integer.parseInt((String) data.get(TAG_SPEED)) / 5;
         if (speed == 0) {
             speed = 2;
         }
-        for (XGSensor sensor : sensors) {
-            sensor.update(data);
+        if (logicMode == LogicMode.SENSOR) {
+            for (XGSensor sensor : sensors) {
+                sensor.update(data);
+            }
+        } else {
+            redstoneOut = (Integer) data.get(TAG_REDSTONE_OUT);
         }
     }
 
@@ -123,6 +165,7 @@ public class XGLogicConnectorSettings extends AbstractConnectorSettings {
     public JsonObject writeToJson() {
         JsonObject object = new JsonObject();
         super.writeToJsonInternal(object);
+        setEnumSafe(object, "logicmode", logicMode);
         setIntegerSafe(object, "speed", speed);
         JsonArray sensorArray = new JsonArray();
         for (XGSensor sensor : sensors) {
@@ -131,12 +174,16 @@ public class XGLogicConnectorSettings extends AbstractConnectorSettings {
             sensorArray.add(o);
         }
         object.add("sensors", sensorArray);
+        if (speed == 1) {
+            object.add("advancedneeded", new JsonPrimitive(true));
+        }
         return object;
     }
 
     @Override
     public void readFromJson(JsonObject object) {
         super.readFromJsonInternal(object);
+        logicMode = getEnumSafe(object, "logicmode", LogicUtils::getLogicModeFrom);
         speed = getIntegerNotNull(object, "speed");
         JsonArray sensorArray = object.get("sensors").getAsJsonArray();
         sensors.clear();
@@ -151,6 +198,7 @@ public class XGLogicConnectorSettings extends AbstractConnectorSettings {
     @Override
     public void readFromNBT(CompoundNBT tag) {
         super.readFromNBT(tag);
+        logicMode = LogicMode.values()[tag.getByte("logicMode")];
         speed = tag.getInt("speed");
         if (speed == 0) {
             speed = 2;
@@ -159,15 +207,20 @@ public class XGLogicConnectorSettings extends AbstractConnectorSettings {
         for (XGSensor sensor : sensors) {
             sensor.readFromNBT(tag);
         }
+        redstoneOut = tag.getInt("rsout");
     }
 
     @Override
     public void writeToNBT(CompoundNBT tag) {
         super.writeToNBT(tag);
+        tag.putByte("logicMode", (byte) logicMode.ordinal());
         tag.putInt("speed", speed);
         tag.putInt("colors", colors);
         for (XGSensor sensor : sensors) {
             sensor.writeToNBT(tag);
+        }
+        if (redstoneOut != null) {
+            tag.putInt("rsout", redstoneOut);
         }
     }
 }

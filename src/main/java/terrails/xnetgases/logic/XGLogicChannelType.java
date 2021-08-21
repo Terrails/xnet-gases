@@ -27,7 +27,7 @@ public class XGLogicChannelType implements IChannelType {
 
     @Override
     public boolean supportsBlock(@Nonnull World world, @Nonnull BlockPos pos, @Nullable Direction direction) {
-        TileEntity tile = world.getTileEntity(pos);
+        TileEntity tile = world.getBlockEntity(pos);
         return GasUtils.getGasHandlerFor(tile, direction).isPresent() || SlurryUtils.getSlurryHandlerFor(tile, direction).isPresent();
     }
 

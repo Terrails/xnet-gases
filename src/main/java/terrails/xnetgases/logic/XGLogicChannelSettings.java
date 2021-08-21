@@ -3,12 +3,14 @@ package terrails.xnetgases.logic;
 import com.google.gson.JsonObject;
 import mcjty.lib.varia.WorldTools;
 import mcjty.rftoolsbase.api.xnet.channels.IChannelSettings;
+import mcjty.rftoolsbase.api.xnet.channels.IConnectorSettings;
 import mcjty.rftoolsbase.api.xnet.channels.IControllerContext;
 import mcjty.rftoolsbase.api.xnet.gui.IEditorGui;
 import mcjty.rftoolsbase.api.xnet.gui.IndicatorIcon;
 import mcjty.rftoolsbase.api.xnet.helper.DefaultChannelSettings;
 import mcjty.rftoolsbase.api.xnet.keys.SidedConsumer;
 import mcjty.xnet.XNet;
+import mcjty.xnet.modules.cables.blocks.ConnectorTileEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
@@ -29,6 +31,7 @@ public class XGLogicChannelSettings extends DefaultChannelSettings implements IC
     private int delay = 0;
     private int colors = 0;
     private List<Pair<SidedConsumer, XGLogicConnectorSettings>> sensors = null;
+    private List<Pair<SidedConsumer, XGLogicConnectorSettings>> outputs = null;
 
     @Override
     public JsonObject writeToJson() {
@@ -73,7 +76,7 @@ public class XGLogicChannelSettings extends DefaultChannelSettings implements IC
             BlockPos connectorPos = context.findConsumerPosition(entry.getKey().getConsumerId());
             if (connectorPos != null) {
                 Direction side = entry.getKey().getSide();
-                BlockPos pos = connectorPos.offset(side);
+                BlockPos pos = connectorPos.relative(side);
                 if (!WorldTools.isLoaded(world, pos)) {
                     // If it is not chunkloaded we just use the color settings as we last remembered it
                     colors |= settings.getColorMask();
@@ -87,7 +90,7 @@ public class XGLogicChannelSettings extends DefaultChannelSettings implements IC
 
                 // If sense is false the sensor is disabled which means the colors from it will also be disabled
                 if (sense) {
-                    TileEntity te = world.getTileEntity(pos);
+                    TileEntity te = world.getBlockEntity(pos);
 
                     for (XGSensor sensor : settings.getSensors()) {
                         if (sensor.test(te, settings)) {
@@ -99,20 +102,65 @@ public class XGLogicChannelSettings extends DefaultChannelSettings implements IC
             settings.setColorMask(sensorColors);
             colors |= sensorColors;
         }
+
+        for (Pair<SidedConsumer, XGLogicConnectorSettings> entry : outputs) {
+            XGLogicConnectorSettings settings = entry.getValue();
+            if (d % settings.getSpeed() != 0) {
+                continue;
+            }
+
+            BlockPos connectorPos = context.findConsumerPosition(entry.getKey().getConsumerId());
+            if (connectorPos != null) {
+                Direction side = entry.getKey().getSide();
+                if (!WorldTools.isLoaded(world, connectorPos)) {
+                    continue;
+                }
+
+                TileEntity te = world.getBlockEntity(connectorPos);
+                if (te instanceof ConnectorTileEntity) {
+                    ConnectorTileEntity connectorTE = (ConnectorTileEntity) te;
+                    int powerOut;
+                    if (checkRedstone(world, settings, connectorPos)) {
+                        powerOut = 0;
+                    } else if (!context.matchColor(settings.getColorsMask())) {
+                        powerOut = 0;
+                    } else {
+                        powerOut = settings.getRedstoneOut() == null ? 0 : settings.getRedstoneOut();
+                    }
+                    connectorTE.setPowerOut(side, powerOut);
+                }
+            }
+        }
     }
 
     private void updateCache(int channel, IControllerContext context) {
-        if (sensors == null) {
+        if (sensors == null || outputs == null) {
             sensors = new ArrayList<>();
-            context.getConnectors(channel).entrySet().stream()
-                    .map((entry) -> Pair.of(entry.getKey(), (XGLogicConnectorSettings) entry.getValue()))
-                    .forEach(sensors::add);
+            outputs = new ArrayList<>();
+            Map<SidedConsumer, IConnectorSettings> connectors = context.getConnectors(channel);
+            for (Map.Entry<SidedConsumer, IConnectorSettings> entry : connectors.entrySet()) {
+                XGLogicConnectorSettings con = (XGLogicConnectorSettings) entry.getValue();
+                if (con.getLogicMode() == XGLogicConnectorSettings.LogicMode.SENSOR) {
+                    sensors.add(Pair.of(entry.getKey(), con));
+                } else {
+                    outputs.add(Pair.of(entry.getKey(), con));
+                }
+            }
+
+            connectors = context.getRoutedConnectors(channel);
+            for (Map.Entry<SidedConsumer, IConnectorSettings> entry : connectors.entrySet()) {
+                XGLogicConnectorSettings con = (XGLogicConnectorSettings) entry.getValue();
+                if (con.getLogicMode() == XGLogicConnectorSettings.LogicMode.OUTPUT) {
+                    outputs.add(Pair.of(entry.getKey(), con));
+                }
+            }
         }
     }
 
     @Override
     public void cleanCache() {
         sensors = null;
+        outputs = null;
     }
 
     @Override

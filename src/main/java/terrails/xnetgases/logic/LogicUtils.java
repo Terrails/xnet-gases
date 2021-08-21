@@ -8,6 +8,7 @@ public class LogicUtils {
 
     private static Map<String, XGSensor.SensorMode> sensorModeCache;
     private static Map<String, XGSensor.Operator> operatorCache;
+    private static Map<String, XGLogicConnectorSettings.LogicMode> logicModeCache;
 
     @Nonnull
     public static XGSensor.SensorMode getSensorModeFrom(String s) {
@@ -29,6 +30,17 @@ public class LogicUtils {
             }
         }
         return operatorCache.get(s);
+    }
+
+    @Nonnull
+    public static XGLogicConnectorSettings.LogicMode getLogicModeFrom(String s) {
+        if (logicModeCache == null) {
+            logicModeCache = new HashMap<>();
+            for (XGLogicConnectorSettings.LogicMode mode : XGLogicConnectorSettings.LogicMode.values()) {
+                logicModeCache.put(mode.name(), mode);
+            }
+        }
+        return logicModeCache.get(s);
     }
 
 }

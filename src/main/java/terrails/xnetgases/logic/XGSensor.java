@@ -7,11 +7,15 @@ import mcjty.rftoolsbase.api.xnet.channels.Color;
 import mcjty.rftoolsbase.api.xnet.gui.IEditorGui;
 import mcjty.rftoolsbase.api.xnet.helper.BaseStringTranslators;
 import mekanism.api.chemical.gas.Gas;
+import mekanism.api.chemical.infuse.InfuseType;
+import mekanism.api.chemical.pigment.Pigment;
 import mekanism.api.chemical.slurry.Slurry;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
 import terrails.xnetgases.gas.GasUtils;
+import terrails.xnetgases.infuse.InfuseUtils;
+import terrails.xnetgases.pigment.PigmentUtils;
 import terrails.xnetgases.slurry.SlurryUtils;
 
 import javax.annotation.Nullable;
@@ -36,7 +40,7 @@ public class XGSensor {
     }
 
     // Custom Operator because the original uses integer instead of long.
-    // Creative gas tanks use Long#MAX_VALUE which results in an integer overflow.
+    // Creative tanks use Long#MAX_VALUE which results in an overflow.
     public enum Operator {
         EQUAL("=", Long::equals),
         NOTEQUAL("!=", (i1, i2) -> !i1.equals(i2)),
@@ -166,7 +170,7 @@ public class XGSensor {
         outputColor = Color.values()[tag.getByte(TAG_COLOR)];
         if (tag.contains(TAG_FILTER)) {
             CompoundNBT itemTag = tag.getCompound(TAG_FILTER);
-            filter = ItemStack.read(itemTag);
+            filter = ItemStack.of(itemTag);
         } else {
             this.filter = ItemStack.EMPTY;
         }
@@ -179,7 +183,7 @@ public class XGSensor {
         tag.putByte(TAG_COLOR, (byte) outputColor.ordinal());
         if (!filter.isEmpty()) {
             CompoundNBT itemTag = new CompoundNBT();
-            filter.write(itemTag);
+            filter.save(itemTag);
             tag.put(TAG_FILTER, itemTag);
         }
     }
@@ -190,7 +194,7 @@ public class XGSensor {
         json.add(TAG_OPERATOR, new JsonPrimitive(operator.name()));
         json.add(TAG_AMOUNT, new JsonPrimitive(amount));
         if (!filter.isEmpty()) {
-            json.add("filter", JSonTools.itemStackToJson(filter));
+            json.add(TAG_FILTER, JSonTools.itemStackToJson(filter));
         }
     }
 
@@ -199,8 +203,8 @@ public class XGSensor {
         operator = json.has(TAG_OPERATOR) ? LogicUtils.getOperatorFrom(json.get(TAG_OPERATOR).getAsString()) : Operator.EQUAL;
         outputColor = json.has(TAG_COLOR) ? BaseStringTranslators.getColor(json.get(TAG_COLOR).getAsString()) : Color.OFF;
         sensorMode = json.has(TAG_MODE) ? LogicUtils.getSensorModeFrom(json.get(TAG_MODE).getAsString()) : SensorMode.OFF;
-        if (json.has("filter")) {
-            filter = JSonTools.jsonToItemStack(json.get("filter").getAsJsonObject());
+        if (json.has(TAG_FILTER)) {
+            filter = JSonTools.jsonToItemStack(json.get(TAG_FILTER).getAsJsonObject());
         } else filter = ItemStack.EMPTY;
     }
 }
