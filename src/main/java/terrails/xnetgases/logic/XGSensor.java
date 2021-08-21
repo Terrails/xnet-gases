@@ -36,7 +36,9 @@ public class XGSensor {
     public enum SensorMode {
         OFF,
         GAS,
-        SLURRY
+        SLURRY,
+        INFUSE,
+        PIGMENT
     }
 
     // Custom Operator because the original uses integer instead of long.
@@ -143,6 +145,26 @@ public class XGSensor {
                         Slurry filterChemical = filterHandler.getChemicalInTank(0).getType();
                         return operator.match(SlurryUtils.getSlurryCount(handler, settings.getFacing(), filterChemical), amount);
                     }).orElseGet(() -> filter.isEmpty() && operator.match(SlurryUtils.getSlurryCount(handler, settings.getFacing()), amount)))
+                    .orElse(false);
+            case INFUSE: return InfuseUtils.getInfuseHandlerFor(te, settings.getFacing())
+                    .map(handler -> InfuseUtils.getInfuseHandlerFor(filter, null).map(filterHandler -> {
+                        if (filterHandler.getTanks() <= 0) {
+                            return false;
+                        }
+
+                        InfuseType filterChemical = filterHandler.getChemicalInTank(0).getType();
+                        return operator.match(InfuseUtils.getInfuseCount(handler, settings.getFacing(), filterChemical), amount);
+                    }).orElseGet(() -> filter.isEmpty() && operator.match(InfuseUtils.getInfuseCount(handler, settings.getFacing()), amount)))
+                    .orElse(false);
+            case PIGMENT: return PigmentUtils.getPigmentHandlerFor(te, settings.getFacing())
+                    .map(handler -> PigmentUtils.getPigmentHandlerFor(filter, null).map(filterHandler -> {
+                        if (filterHandler.getTanks() <= 0) {
+                            return false;
+                        }
+
+                        Pigment filterChemical = filterHandler.getChemicalInTank(0).getType();
+                        return operator.match(PigmentUtils.getPigmentCount(handler, settings.getFacing(), filterChemical), amount);
+                    }).orElseGet(() -> filter.isEmpty() && operator.match(PigmentUtils.getPigmentCount(handler, settings.getFacing()), amount)))
                     .orElse(false);
         }
         return false;

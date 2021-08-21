@@ -15,7 +15,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import terrails.xnetgases.gas.GasChannelType;
 import terrails.xnetgases.gas.GasConnectable;
+import terrails.xnetgases.infuse.InfuseChannelType;
+import terrails.xnetgases.infuse.InfuseConnectable;
 import terrails.xnetgases.logic.XGLogicChannelType;
+import terrails.xnetgases.pigment.PigmentChannelType;
+import terrails.xnetgases.pigment.PigmentConnectable;
 import terrails.xnetgases.slurry.SlurryChannelType;
 import terrails.xnetgases.slurry.SlurryConnectable;
 
@@ -33,6 +37,12 @@ public class XNetGases {
     public static ForgeConfigSpec.IntValue maxSlurryRateNormal;
     public static ForgeConfigSpec.IntValue maxSlurryRateAdvanced;
 
+    public static ForgeConfigSpec.IntValue maxInfuseRateNormal;
+    public static ForgeConfigSpec.IntValue maxInfuseRateAdvanced;
+
+    public static ForgeConfigSpec.IntValue maxPigmentRateNormal;
+    public static ForgeConfigSpec.IntValue maxPigmentRateAdvanced;
+
     private static final ForgeConfigSpec CONFIG_SPEC;
 
     public XNetGases() {
@@ -49,6 +59,12 @@ public class XNetGases {
 
         XNet.xNetApi.registerChannelType(new SlurryChannelType());
         XNet.xNetApi.registerConnectable(new SlurryConnectable());
+
+        XNet.xNetApi.registerChannelType(new InfuseChannelType());
+        XNet.xNetApi.registerConnectable(new InfuseConnectable());
+
+        XNet.xNetApi.registerChannelType(new PigmentChannelType());
+        XNet.xNetApi.registerConnectable(new PigmentConnectable());
 
         XNet.xNetApi.registerChannelType(new XGLogicChannelType());
     }
@@ -70,6 +86,20 @@ public class XNetGases {
         maxSlurryRateAdvanced = builder
                 .comment("Maximum slurry per operation that an advanced connector can input or output")
                 .defineInRange("maxSlurryRateAdvanced", 5000, 1, 1000000000);
+
+        maxInfuseRateNormal = builder
+                .comment("Maximum infuse per operation that a normal connector can input or output")
+                .defineInRange("maxInfuseRateNormal", 1000, 1, 1000000000);
+        maxInfuseRateAdvanced = builder
+                .comment("Maximum infuse per operation that an advanced connector can input or output")
+                .defineInRange("maxInfuseRateAdvanced", 5000, 1, 1000000000);
+
+        maxPigmentRateNormal = builder
+                .comment("Maximum pigment per operation that a normal connector can input or output")
+                .defineInRange("maxPigmentRateNormal", 1000, 1, 1000000000);
+        maxPigmentRateAdvanced = builder
+                .comment("Maximum pigment per operation that an advanced connector can input or output")
+                .defineInRange("maxPigmentRateAdvanced", 5000, 1, 1000000000);
 
         CONFIG_SPEC = builder.pop().build();
     }

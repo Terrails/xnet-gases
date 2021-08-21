@@ -8,6 +8,8 @@ import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import terrails.xnetgases.gas.GasUtils;
+import terrails.xnetgases.infuse.InfuseUtils;
+import terrails.xnetgases.pigment.PigmentUtils;
 import terrails.xnetgases.slurry.SlurryUtils;
 
 import javax.annotation.Nonnull;
@@ -28,7 +30,10 @@ public class XGLogicChannelType implements IChannelType {
     @Override
     public boolean supportsBlock(@Nonnull World world, @Nonnull BlockPos pos, @Nullable Direction direction) {
         TileEntity tile = world.getBlockEntity(pos);
-        return GasUtils.getGasHandlerFor(tile, direction).isPresent() || SlurryUtils.getSlurryHandlerFor(tile, direction).isPresent();
+        return GasUtils.getGasHandlerFor(tile, direction).isPresent()
+                || SlurryUtils.getSlurryHandlerFor(tile, direction).isPresent()
+                || InfuseUtils.getInfuseHandlerFor(tile, direction).isPresent()
+                || PigmentUtils.getPigmentHandlerFor(tile, direction).isPresent();
     }
 
     @Nonnull
