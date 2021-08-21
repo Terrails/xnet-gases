@@ -24,7 +24,7 @@ public class SlurryChannelType implements IChannelType {
 
     @Override
     public boolean supportsBlock(@Nonnull World world, @Nonnull BlockPos pos, @Nullable Direction direction) {
-        return SlurryUtils.getSlurryHandlerFor(world.getTileEntity(pos), direction).isPresent();
+        return SlurryUtils.getSlurryHandlerFor(world.getBlockEntity(pos), direction).isPresent();
     }
 
     @Nonnull

@@ -98,12 +98,12 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
 
                 BlockPos extractorPos = context.findConsumerPosition(consumer.getConsumerId());
                 if (extractorPos != null) {
-                    BlockPos pos = extractorPos.offset(consumer.getSide());
+                    BlockPos pos = extractorPos.relative(consumer.getSide());
                     if (!WorldTools.isLoaded(world, pos)) {
                         continue;
                     }
 
-                    TileEntity te = world.getTileEntity(pos);
+                    TileEntity te = world.getBlockEntity(pos);
                     Optional<ISlurryHandler> optional = SlurryUtils.getSlurryHandlerFor(te, settings.getFacing());
                     if (optional.isPresent()) {
                         ISlurryHandler handler = optional.get();
@@ -145,12 +145,12 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
                                     return false;
                                 }
 
-                                BlockPos _pos = _extractorPos.offset(_consumer.getSide());
+                                BlockPos _pos = _extractorPos.relative(_consumer.getSide());
                                 if (!WorldTools.isLoaded(world, _pos)) {
                                     return false;
                                 }
 
-                                Optional<ISlurryHandler> _optional = SlurryUtils.getSlurryHandlerFor(world.getTileEntity(_pos), _settings.getFacing());
+                                Optional<ISlurryHandler> _optional = SlurryUtils.getSlurryHandlerFor(world.getBlockEntity(_pos), _settings.getFacing());
                                 if (_optional.isPresent()) {
                                     ISlurryHandler _handler = _optional.get();
 
@@ -226,8 +226,8 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
                         continue;
                     }
 
-                    BlockPos pos = consumerPos.offset(consumer.getSide());
-                    TileEntity te = world.getTileEntity(pos);
+                    BlockPos pos = consumerPos.relative(consumer.getSide());
+                    TileEntity te = world.getBlockEntity(pos);
 
                     Optional<ISlurryHandler> optional = SlurryUtils.getSlurryHandlerFor(te, settings.getFacing());
                     if (optional.isPresent()) {
@@ -261,12 +261,12 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
                                     return false;
                                 }
 
-                                BlockPos _pos = _extractorPos.offset(_consumer.getSide());
+                                BlockPos _pos = _extractorPos.relative(_consumer.getSide());
                                 if (!WorldTools.isLoaded(world, _pos)) {
                                     return false;
                                 }
 
-                                Optional<ISlurryHandler> _optional = SlurryUtils.getSlurryHandlerFor(world.getTileEntity(_pos), _settings.getFacing());
+                                Optional<ISlurryHandler> _optional = SlurryUtils.getSlurryHandlerFor(world.getBlockEntity(_pos), _settings.getFacing());
                                 if (_optional.isPresent()) {
                                     ISlurryHandler _handler = _optional.get();
 
@@ -314,8 +314,8 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
             BlockPos consumerPosition = context.findConsumerPosition(pair.getFirst().getConsumerId());
 
             assert consumerPosition != null;
-            BlockPos pos = consumerPosition.offset(pair.getFirst().getSide());
-            TileEntity te = context.getControllerWorld().getTileEntity(pos);
+            BlockPos pos = consumerPosition.relative(pair.getFirst().getSide());
+            TileEntity te = context.getControllerWorld().getBlockEntity(pos);
 
             Optional<ISlurryHandler> optional = SlurryUtils.getSlurryHandlerFor(te, settings.getFacing());
             if (optional.isPresent()) {

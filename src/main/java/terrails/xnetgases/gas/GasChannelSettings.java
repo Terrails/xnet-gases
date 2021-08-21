@@ -98,12 +98,12 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
 
                 BlockPos extractorPos = context.findConsumerPosition(consumer.getConsumerId());
                 if (extractorPos != null) {
-                    BlockPos pos = extractorPos.offset(consumer.getSide());
+                    BlockPos pos = extractorPos.relative(consumer.getSide());
                     if (!WorldTools.isLoaded(world, pos)) {
                         continue;
                     }
 
-                    TileEntity te = world.getTileEntity(pos);
+                    TileEntity te = world.getBlockEntity(pos);
                     Optional<IGasHandler> optional = GasUtils.getGasHandlerFor(te, settings.getFacing());
                     if (optional.isPresent()) {
                         IGasHandler handler = optional.get();
@@ -145,12 +145,12 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
                                     return false;
                                 }
 
-                                BlockPos _pos = _extractorPos.offset(_consumer.getSide());
+                                BlockPos _pos = _extractorPos.relative(_consumer.getSide());
                                 if (!WorldTools.isLoaded(world, _pos)) {
                                     return false;
                                 }
 
-                                Optional<IGasHandler> _optional = GasUtils.getGasHandlerFor(world.getTileEntity(_pos), _settings.getFacing());
+                                Optional<IGasHandler> _optional = GasUtils.getGasHandlerFor(world.getBlockEntity(_pos), _settings.getFacing());
                                 if (_optional.isPresent()) {
                                     IGasHandler _handler = _optional.get();
 
@@ -226,8 +226,8 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
                         continue;
                     }
 
-                    BlockPos pos = consumerPos.offset(consumer.getSide());
-                    TileEntity te = world.getTileEntity(pos);
+                    BlockPos pos = consumerPos.relative(consumer.getSide());
+                    TileEntity te = world.getBlockEntity(pos);
 
                     Optional<IGasHandler> optional = GasUtils.getGasHandlerFor(te, settings.getFacing());
                     if (optional.isPresent()) {
@@ -261,12 +261,12 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
                                     return false;
                                 }
 
-                                BlockPos _pos = _extractorPos.offset(_consumer.getSide());
+                                BlockPos _pos = _extractorPos.relative(_consumer.getSide());
                                 if (!WorldTools.isLoaded(world, _pos)) {
                                     return false;
                                 }
 
-                                Optional<IGasHandler> _optional = GasUtils.getGasHandlerFor(world.getTileEntity(_pos), _settings.getFacing());
+                                Optional<IGasHandler> _optional = GasUtils.getGasHandlerFor(world.getBlockEntity(_pos), _settings.getFacing());
                                 if (_optional.isPresent()) {
                                     IGasHandler _handler = _optional.get();
 
@@ -314,8 +314,8 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
             BlockPos consumerPosition = context.findConsumerPosition(pair.getFirst().getConsumerId());
 
             assert consumerPosition != null;
-            BlockPos pos = consumerPosition.offset(pair.getFirst().getSide());
-            TileEntity te = context.getControllerWorld().getTileEntity(pos);
+            BlockPos pos = consumerPosition.relative(pair.getFirst().getSide());
+            TileEntity te = context.getControllerWorld().getBlockEntity(pos);
 
             Optional<IGasHandler> optional = GasUtils.getGasHandlerFor(te, settings.getFacing());
             if (optional.isPresent()) {

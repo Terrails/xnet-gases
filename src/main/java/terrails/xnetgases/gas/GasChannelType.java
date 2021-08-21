@@ -24,7 +24,7 @@ public class GasChannelType implements IChannelType {
 
     @Override
     public boolean supportsBlock(@Nonnull World world, @Nonnull BlockPos pos, @Nullable Direction direction) {
-        return GasUtils.getGasHandlerFor(world.getTileEntity(pos), direction).isPresent();
+        return GasUtils.getGasHandlerFor(world.getBlockEntity(pos), direction).isPresent();
     }
 
     @Nonnull
