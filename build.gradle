@@ -1,32 +1,39 @@
 buildscript {
     repositories {
-        maven { url = 'https://files.minecraftforge.net/maven' }
-        jcenter()
+        maven { url = 'https://maven.minecraftforge.net' }
+        maven { url = 'https://maven.parchmentmc.org' }
         mavenCentral()
     }
     dependencies {
-        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '3.+', changing: true
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.+', changing: true
+        classpath 'org.parchmentmc:librarian:1.+'
     }
 }
 apply plugin: 'net.minecraftforge.gradle'
+apply plugin: 'org.parchmentmc.librarian.forgegradle'
 
 def minecraft_version = "1.16.5"
-def forge_version = "36.0.22"
-def mappings_version = ["snapshot", "20201028-1.16.3"]
+def forge_version = "36.2.2"
 
 version = "2.2.6"
 group = 'terrails.xnetgases'
 archivesBaseName = "XNetGases-${minecraft_version}"
 
-sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8'
+java.toolchain.languageVersion = JavaLanguageVersion.of(8)
 
+println('Java: ' + System.getProperty('java.version') + ' JVM: ' + System.getProperty('java.vm.version') + '(' + System.getProperty('java.vendor') + ') Arch: ' + System.getProperty('os.arch'))
 minecraft {
-    mappings channel: mappings_version[0], version: mappings_version[1]
+    mappings channel: 'parchment', version: '2021.08.08-1.16.5'
 
     runs {
         client {
             workingDirectory project.file('run')
             property 'forge.logging.console.level', 'debug'
+
+            // "SCAN": For mods scan.
+            // "REGISTRIES": For firing of registry events.
+            // "REGISTRYDUMP": For getting the contents of all registries.
+            property 'forge.logging.markers', 'REGISTRIES'
 
             mods {
                 xnetgases {
@@ -39,6 +46,29 @@ minecraft {
             workingDirectory project.file('run')
             property 'forge.logging.console.level', 'debug'
 
+            // "SCAN": For mods scan.
+            // "REGISTRIES": For firing of registry events.
+            // "REGISTRYDUMP": For getting the contents of all registries.
+            property 'forge.logging.markers', 'REGISTRIES'
+
+            mods {
+                xnetgases {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        data {
+            workingDirectory project.file('run')
+            property 'forge.logging.console.level', 'debug'
+
+            // "SCAN": For mods scan.
+            // "REGISTRIES": For firing of registry events.
+            // "REGISTRYDUMP": For getting the contents of all registries.
+            property 'forge.logging.markers', 'REGISTRIES'
+
+            args '--mod', 'xnetgases', '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
+
             mods {
                 xnetgases {
                     source sourceSets.main
@@ -48,9 +78,14 @@ minecraft {
     }
 }
 
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
 repositories {
     maven {
-        url = "https://www.cursemaven.com"
+        url "https://www.cursemaven.com"
+        content {
+            includeGroup "curse.maven"
+        }
     }
 }
 
@@ -58,22 +93,18 @@ dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
     // XNet
-    compile fg.deobf("curse.maven:xnet-260912:3140153") // 1.16-3.0.11
-    compile fg.deobf("curse.maven:rftools-base-326041:3140147") // 1.16-2.0.9
-    compile fg.deobf("curse.maven:mcjtylib-233105:3194349") // 1.16-5.0.16
+    implementation fg.deobf("curse.maven:xnet-260912:3310471") // 1.16-3.0.13
+    implementation fg.deobf("curse.maven:rftools-base-326041:3380271") // 1.16-2.0.11
+    implementation fg.deobf("curse.maven:mcjtylib-233105:3402861") // 1.16-5.0.22
 
     // Mekanism
-    compile fg.deobf("curse.maven:mekanism-268560:3202681") // 1.16.4-10.0.20.447
+    implementation fg.deobf("curse.maven:mekanism-268560:3206392") // 1.16.5-10.0.21.448
 }
 
-jar {
-    manifest {
-        attributes([
-            "Specification-Title": "xnetgases",
-            "Specification-Version": "1", // We are version 1 of ourselves
-            "Implementation-Title": project.name,
-            "Implementation-Version": "${version}",
-            "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
-        ])
-    }
-}
+jar.manifest.attributes([
+        "Specification-Title": "xnetgasses",
+        "Specification-Version": "1",
+        "Implementation-Title": project.name,
+        "Implementation-Version": "${version}",
+        "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+])
