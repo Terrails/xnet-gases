@@ -1,4 +1,4 @@
-package terrails.xnetgases.gas;
+package terrails.xnetgases.module.gas;
 
 import mekanism.api.Action;
 import mekanism.api.chemical.gas.Gas;

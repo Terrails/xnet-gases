@@ -1,4 +1,4 @@
-package terrails.xnetgases.logic;
+package terrails.xnetgases.module.logic;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
@@ -13,10 +13,10 @@ import mekanism.api.chemical.slurry.Slurry;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
-import terrails.xnetgases.gas.GasUtils;
-import terrails.xnetgases.infuse.InfuseUtils;
-import terrails.xnetgases.pigment.PigmentUtils;
-import terrails.xnetgases.slurry.SlurryUtils;
+import terrails.xnetgases.module.gas.GasUtils;
+import terrails.xnetgases.module.infuse.InfuseUtils;
+import terrails.xnetgases.module.pigment.PigmentUtils;
+import terrails.xnetgases.module.slurry.SlurryUtils;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
@@ -27,11 +27,11 @@ import java.util.stream.Collectors;
 
 public class XGSensor {
 
-    public final String TAG_MODE;
-    public final String TAG_OPERATOR;
-    public final String TAG_AMOUNT;
-    public final String TAG_COLOR;
-    public final String TAG_FILTER;
+    public final String modeTag;
+    public final String operatorTag;
+    public final String amountTag;
+    public final String colorTag;
+    public final String filterTag;
 
     public enum SensorMode {
         OFF,
@@ -84,11 +84,11 @@ public class XGSensor {
 
     public XGSensor(int index) {
         String temp = String.format("sensor%s_", index);
-        TAG_MODE = temp + "mode";
-        TAG_OPERATOR = temp + "operator";
-        TAG_AMOUNT = temp + "amount";
-        TAG_COLOR = temp + "color";
-        TAG_FILTER = temp + "filter";
+        modeTag = temp + "mode";
+        operatorTag = temp + "operator";
+        amountTag = temp + "amount";
+        colorTag = temp + "color";
+        filterTag = temp + "filter";
     }
 
     public Color getOutputColor() {
@@ -96,19 +96,19 @@ public class XGSensor {
     }
 
     public boolean isEnabled(String tag) {
-        if ((TAG_MODE).equals(tag)) {
+        if ((modeTag).equals(tag)) {
             return true;
         }
-        if ((TAG_OPERATOR).equals(tag)) {
+        if ((operatorTag).equals(tag)) {
             return true;
         }
-        if ((TAG_AMOUNT).equals(tag)) {
+        if ((amountTag).equals(tag)) {
             return true;
         }
-        if ((TAG_COLOR).equals(tag)) {
+        if ((colorTag).equals(tag)) {
             return true;
         }
-        if ((TAG_FILTER).equals(tag)) {
+        if ((filterTag).equals(tag)) {
             return sensorMode != SensorMode.OFF;
         }
         return false;
@@ -116,11 +116,11 @@ public class XGSensor {
 
     public void createGui(IEditorGui gui) {
         gui
-                .choices(TAG_MODE, "Sensor mode", sensorMode, SensorMode.values())
-                .choices(TAG_OPERATOR, "Operator", operator, Operator.values())
-                .integer(TAG_AMOUNT, "Amount to compare with", amount, 46)
-                .colors(TAG_COLOR, "Output color", outputColor.getColor(), Color.COLORS)
-                .ghostSlot(TAG_FILTER, filter)
+                .choices(modeTag, "Sensor mode", sensorMode, SensorMode.values())
+                .choices(operatorTag, "Operator", operator, Operator.values())
+                .integer(amountTag, "Amount to compare with", amount, 46)
+                .colors(colorTag, "Output color", outputColor.getColor(), Color.COLORS)
+                .ghostSlot(filterTag, filter)
                 .nl();
     }
 
@@ -171,11 +171,11 @@ public class XGSensor {
     }
 
     public void update(Map<String, Object> data) {
-        sensorMode = this.getObjectFromMap(data, TAG_MODE, SensorMode.OFF, (object) -> SensorMode.valueOf(((String) object).toUpperCase()));
-        operator = this.getObjectFromMap(data, TAG_OPERATOR, Operator.EQUAL, (object) -> Operator.byCode(((String) object).toUpperCase()));
-        amount = this.getObjectFromMap(data, TAG_AMOUNT, 0, Integer.class::cast);
-        outputColor = this.getObjectFromMap(data, TAG_COLOR, Color.OFF, (object) -> Color.colorByValue((Integer) object));
-        filter = this.getObjectFromMap(data, TAG_FILTER, ItemStack.EMPTY, ItemStack.class::cast);
+        sensorMode = this.getObjectFromMap(data, modeTag, SensorMode.OFF, (object) -> SensorMode.valueOf(((String) object).toUpperCase()));
+        operator = this.getObjectFromMap(data, operatorTag, Operator.EQUAL, (object) -> Operator.byCode(((String) object).toUpperCase()));
+        amount = this.getObjectFromMap(data, amountTag, 0, Integer.class::cast);
+        outputColor = this.getObjectFromMap(data, colorTag, Color.OFF, (object) -> Color.colorByValue((Integer) object));
+        filter = this.getObjectFromMap(data, filterTag, ItemStack.EMPTY, ItemStack.class::cast);
     }
 
     private <T> T getObjectFromMap(Map<String, Object> data, String key, T defaultValue, Function<Object, T> function) {
@@ -186,12 +186,12 @@ public class XGSensor {
     }
 
     public void readFromNBT(CompoundNBT tag) {
-        sensorMode = SensorMode.values()[tag.getByte(TAG_MODE)];
-        operator = Operator.values()[tag.getByte(TAG_OPERATOR)];
-        amount = tag.getInt(TAG_AMOUNT);
-        outputColor = Color.values()[tag.getByte(TAG_COLOR)];
-        if (tag.contains(TAG_FILTER)) {
-            CompoundNBT itemTag = tag.getCompound(TAG_FILTER);
+        sensorMode = SensorMode.values()[tag.getByte(modeTag)];
+        operator = Operator.values()[tag.getByte(operatorTag)];
+        amount = tag.getInt(amountTag);
+        outputColor = Color.values()[tag.getByte(colorTag)];
+        if (tag.contains(filterTag)) {
+            CompoundNBT itemTag = tag.getCompound(filterTag);
             filter = ItemStack.of(itemTag);
         } else {
             this.filter = ItemStack.EMPTY;
@@ -199,34 +199,34 @@ public class XGSensor {
     }
 
     public void writeToNBT(CompoundNBT tag) {
-        tag.putByte(TAG_MODE, (byte) sensorMode.ordinal());
-        tag.putByte(TAG_OPERATOR, (byte) operator.ordinal());
-        tag.putInt(TAG_AMOUNT, amount);
-        tag.putByte(TAG_COLOR, (byte) outputColor.ordinal());
+        tag.putByte(modeTag, (byte) sensorMode.ordinal());
+        tag.putByte(operatorTag, (byte) operator.ordinal());
+        tag.putInt(amountTag, amount);
+        tag.putByte(colorTag, (byte) outputColor.ordinal());
         if (!filter.isEmpty()) {
             CompoundNBT itemTag = new CompoundNBT();
             filter.save(itemTag);
-            tag.put(TAG_FILTER, itemTag);
+            tag.put(filterTag, itemTag);
         }
     }
 
     public void writeToJson(JsonObject json) {
-        json.add(TAG_MODE, new JsonPrimitive(sensorMode.name()));
-        json.add(TAG_COLOR, new JsonPrimitive(outputColor.name()));
-        json.add(TAG_OPERATOR, new JsonPrimitive(operator.name()));
-        json.add(TAG_AMOUNT, new JsonPrimitive(amount));
+        json.add(modeTag, new JsonPrimitive(sensorMode.name()));
+        json.add(colorTag, new JsonPrimitive(outputColor.name()));
+        json.add(operatorTag, new JsonPrimitive(operator.name()));
+        json.add(amountTag, new JsonPrimitive(amount));
         if (!filter.isEmpty()) {
-            json.add(TAG_FILTER, JSonTools.itemStackToJson(filter));
+            json.add(filterTag, JSonTools.itemStackToJson(filter));
         }
     }
 
     public void readFromJson(JsonObject json) {
-        amount = json.has(TAG_AMOUNT) ? json.get(TAG_AMOUNT).getAsInt() : 0;
-        operator = json.has(TAG_OPERATOR) ? LogicUtils.getOperatorFrom(json.get(TAG_OPERATOR).getAsString()) : Operator.EQUAL;
-        outputColor = json.has(TAG_COLOR) ? BaseStringTranslators.getColor(json.get(TAG_COLOR).getAsString()) : Color.OFF;
-        sensorMode = json.has(TAG_MODE) ? LogicUtils.getSensorModeFrom(json.get(TAG_MODE).getAsString()) : SensorMode.OFF;
-        if (json.has(TAG_FILTER)) {
-            filter = JSonTools.jsonToItemStack(json.get(TAG_FILTER).getAsJsonObject());
+        amount = json.has(amountTag) ? json.get(amountTag).getAsInt() : 0;
+        operator = json.has(operatorTag) ? LogicUtils.getOperatorFrom(json.get(operatorTag).getAsString()) : Operator.EQUAL;
+        outputColor = json.has(colorTag) ? BaseStringTranslators.getColor(json.get(colorTag).getAsString()) : Color.OFF;
+        sensorMode = json.has(modeTag) ? LogicUtils.getSensorModeFrom(json.get(modeTag).getAsString()) : SensorMode.OFF;
+        if (json.has(filterTag)) {
+            filter = JSonTools.jsonToItemStack(json.get(filterTag).getAsJsonObject());
         } else filter = ItemStack.EMPTY;
     }
 }

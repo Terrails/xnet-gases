@@ -1,51 +1,46 @@
-package terrails.xnetgases.pigment;
+package terrails.xnetgases.module.slurry;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.mojang.datafixers.util.Pair;
 import mcjty.lib.varia.WorldTools;
-import mcjty.rftoolsbase.api.xnet.channels.IChannelSettings;
 import mcjty.rftoolsbase.api.xnet.channels.IConnectorSettings;
 import mcjty.rftoolsbase.api.xnet.channels.IControllerContext;
 import mcjty.rftoolsbase.api.xnet.gui.IEditorGui;
 import mcjty.rftoolsbase.api.xnet.gui.IndicatorIcon;
-import mcjty.rftoolsbase.api.xnet.helper.DefaultChannelSettings;
 import mcjty.rftoolsbase.api.xnet.keys.SidedConsumer;
-import mcjty.xnet.XNet;
 import mcjty.xnet.setup.Config;
 import mekanism.api.Action;
-import mekanism.api.chemical.pigment.IPigmentHandler;
-import mekanism.api.chemical.pigment.Pigment;
-import mekanism.api.chemical.pigment.PigmentStack;
+import mekanism.api.chemical.slurry.ISlurryHandler;
+import mekanism.api.chemical.slurry.Slurry;
+import mekanism.api.chemical.slurry.SlurryStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import terrails.xnetgases.helper.ChemicalChannelSettings;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
 
-public class PigmentChannelSettings extends DefaultChannelSettings implements IChannelSettings {
+import static terrails.xnetgases.Constants.*;
 
-    public static final ResourceLocation iconGuiElements = new ResourceLocation(XNet.MODID, "textures/gui/guielements.png");
-
-    public static final String TAG_MODE = "mode";
+public class SlurryChannelSettings extends ChemicalChannelSettings {
 
     public enum ChannelMode {
         PRIORITY,
         DISTRIBUTE
     }
 
-    private ChannelMode channelMode = ChannelMode.DISTRIBUTE;
+    private SlurryChannelSettings.ChannelMode channelMode = SlurryChannelSettings.ChannelMode.DISTRIBUTE;
     private int delay;
     private int roundRobinOffset;
 
-    private List<Pair<SidedConsumer, PigmentConnectorSettings>> pigmentExtractors;
-    private List<Pair<SidedConsumer, PigmentConnectorSettings>> pigmentConsumers;
+    private List<Pair<SidedConsumer, SlurryConnectorSettings>> slurryExtractors;
+    private List<Pair<SidedConsumer, SlurryConnectorSettings>> slurryConsumers;
 
-    public PigmentChannelSettings() {
+    public SlurryChannelSettings() {
         this.delay = 0;
         this.roundRobinOffset = 0;
     }
@@ -59,12 +54,12 @@ public class PigmentChannelSettings extends DefaultChannelSettings implements IC
 
     @Override
     public void readFromJson(JsonObject data) {
-        channelMode = PigmentUtils.getChannelModeFrom(data.get("mode").getAsString());
+        channelMode = SlurryUtils.getChannelModeFrom(data.get("mode").getAsString());
     }
 
     @Override
     public void readFromNBT(CompoundNBT nbt) {
-        channelMode = PigmentChannelSettings.ChannelMode.values()[nbt.getByte("mode")];
+        channelMode = SlurryChannelSettings.ChannelMode.values()[nbt.getByte("mode")];
         this.delay = nbt.getInt("delay");
         this.roundRobinOffset = nbt.getInt("offset");
     }
@@ -75,7 +70,6 @@ public class PigmentChannelSettings extends DefaultChannelSettings implements IC
         nbt.putInt("delay", this.delay);
         nbt.putInt("offset", this.roundRobinOffset);
     }
-
 
     @Override
     public void tick(int channel, IControllerContext context) {
@@ -90,9 +84,9 @@ public class PigmentChannelSettings extends DefaultChannelSettings implements IC
 
             World world = context.getControllerWorld();
             extractorsLoop:
-            for (Pair<SidedConsumer, PigmentConnectorSettings> entry : pigmentExtractors) {
+            for (Pair<SidedConsumer, SlurryConnectorSettings> entry : slurryExtractors) {
                 SidedConsumer consumer = entry.getFirst();
-                PigmentConnectorSettings settings = entry.getSecond();
+                SlurryConnectorSettings settings = entry.getSecond();
                 if (d % settings.getSpeed() != 0) {
                     continue;
                 }
@@ -105,9 +99,9 @@ public class PigmentChannelSettings extends DefaultChannelSettings implements IC
                     }
 
                     TileEntity te = world.getBlockEntity(pos);
-                    Optional<IPigmentHandler> optional = PigmentUtils.getPigmentHandlerFor(te, settings.getFacing());
+                    Optional<ISlurryHandler> optional = SlurryUtils.getSlurryHandlerFor(te, settings.getFacing());
                     if (optional.isPresent()) {
-                        IPigmentHandler handler = optional.get();
+                        ISlurryHandler handler = optional.get();
 
                         if (checkRedstone(world, settings, extractorPos)) {
                             return;
@@ -116,13 +110,13 @@ public class PigmentChannelSettings extends DefaultChannelSettings implements IC
                             return;
                         }
 
-                        PigmentStack extractMatcher = settings.getMatcher();
+                        SlurryStack extractMatcher = settings.getMatcher();
 
                         long toExtract = settings.getRate();
 
                         Integer count = settings.getMinmax();
                         if (count != null) {
-                            long amount = PigmentUtils.getPigmentCount(handler, settings.getFacing(), extractMatcher);
+                            long amount = SlurryUtils.getSlurryCount(handler, settings.getFacing(), extractMatcher);
                             long canExtract = amount - count;
                             if (canExtract <= 0) {
                                 continue;
@@ -130,12 +124,12 @@ public class PigmentChannelSettings extends DefaultChannelSettings implements IC
                             toExtract = Math.min(toExtract, canExtract);
                         }
 
-                        if (channelMode == PigmentChannelSettings.ChannelMode.PRIORITY) {
+                        if (channelMode == ChannelMode.PRIORITY) {
 
-                            // Skip current extractor if there is one with the same pigment but has higher priority.
-                            if (pigmentExtractors.stream().anyMatch(_entry -> {
+                            // Skip current extractor if there is one with the same slurry but higher priority.
+                            if (slurryExtractors.stream().anyMatch(_entry -> {
                                 SidedConsumer _consumer = _entry.getFirst();
-                                PigmentConnectorSettings _settings = _entry.getSecond();
+                                SlurryConnectorSettings _settings = _entry.getSecond();
 
                                 if (_settings.getPriority() <= settings.getPriority()) {
                                     return false;
@@ -151,21 +145,21 @@ public class PigmentChannelSettings extends DefaultChannelSettings implements IC
                                     return false;
                                 }
 
-                                Optional<IPigmentHandler> _optional = PigmentUtils.getPigmentHandlerFor(world.getBlockEntity(_pos), _settings.getFacing());
+                                Optional<ISlurryHandler> _optional = SlurryUtils.getSlurryHandlerFor(world.getBlockEntity(_pos), _settings.getFacing());
                                 if (_optional.isPresent()) {
-                                    IPigmentHandler _handler = _optional.get();
+                                    ISlurryHandler _handler = _optional.get();
 
-                                    List<Pigment> handlerPigments = PigmentUtils.getPigmentInTank(handler, consumer.getSide());
-                                    List<Pigment> _handlerPigments = PigmentUtils.getPigmentInTank(_handler, _consumer.getSide());
+                                    List<Slurry> handlerSlurries = SlurryUtils.getSlurryInTank(handler, consumer.getSide());
+                                    List<Slurry> _handlerSlurries = SlurryUtils.getSlurryInTank(_handler, _consumer.getSide());
 
-                                    if (Collections.disjoint(handlerPigments, _handlerPigments)) {
+                                    if (Collections.disjoint(handlerSlurries, _handlerSlurries)) {
                                         return false;
                                     }
 
-                                    PigmentStack matcher = settings.getMatcher();
-                                    PigmentStack _matcher = _settings.getMatcher();
+                                    SlurryStack matcher = settings.getMatcher();
+                                    SlurryStack _matcher = _settings.getMatcher();
 
-                                    return (matcher == null || handlerPigments.contains(matcher.getType())) && (_matcher == null || _handlerPigments.contains(_matcher.getType()));
+                                    return (matcher == null || handlerSlurries.contains(matcher.getType())) && (_matcher == null || _handlerSlurries.contains(_matcher.getType()));
                                 }
                                 return false;
                             })) {
@@ -173,25 +167,25 @@ public class PigmentChannelSettings extends DefaultChannelSettings implements IC
                             }
                         }
 
-                        List<Pair<SidedConsumer, PigmentConnectorSettings>> inserted = new ArrayList<>();
+                        List<Pair<SidedConsumer, SlurryConnectorSettings>> inserted = new ArrayList<>();
                         long remaining;
                         do {
-                            PigmentStack stack = PigmentUtils.extractPigment(handler, toExtract, settings.getFacing(), Action.SIMULATE);
+                            SlurryStack stack = SlurryUtils.extractSlurry(handler, toExtract, settings.getFacing(), Action.SIMULATE);
                             if (stack.isEmpty() || (extractMatcher != null && !extractMatcher.equals(stack)))
                                 continue extractorsLoop;
                             toExtract = stack.getAmount();
                             inserted.clear();
-                            remaining = insertPigmentSimulate(inserted, context, stack);
+                            remaining = insertSlurrySimulate(inserted, context, stack);
                             toExtract -= remaining;
                             if (inserted.isEmpty() || toExtract <= 0) continue extractorsLoop;
                         } while (remaining > 0);
 
                         if (context.checkAndConsumeRF(Config.controllerOperationRFT.get())) {
-                            PigmentStack stack = PigmentUtils.extractPigment(handler, toExtract, settings.getFacing(), Action.EXECUTE);
+                            SlurryStack stack = SlurryUtils.extractSlurry(handler, toExtract, settings.getFacing(), Action.EXECUTE);
                             if (stack.isEmpty()) {
-                                throw new NullPointerException(handler.getClass().getName() + " misbehaved! handler.extractPigment(" + toExtract + ", Action.SIMULATE) returned null, even though handler.extractPigment(" + toExtract + ", Action.EXECUTE) did not");
+                                throw new NullPointerException(handler.getClass().getName() + " misbehaved! handler.extractSlurry(" + toExtract + ", Action.SIMULATE) returned null, even though handler.extractSlurry(" + toExtract + ", Action.EXECUTE) did not");
                             }
-                            insertPigmentReal(context, inserted, stack);
+                            insertSlurryReal(context, inserted, stack);
                         }
                     }
                 }
@@ -201,18 +195,18 @@ public class PigmentChannelSettings extends DefaultChannelSettings implements IC
 
     @Override
     public void cleanCache() {
-        this.pigmentExtractors = null;
-        this.pigmentConsumers = null;
+        this.slurryExtractors = null;
+        this.slurryConsumers = null;
     }
 
-    private long insertPigmentSimulate(@Nonnull List<Pair<SidedConsumer, PigmentConnectorSettings>> inserted, @Nonnull IControllerContext context, @Nonnull PigmentStack stack) {
+    private long insertSlurrySimulate(@Nonnull List<Pair<SidedConsumer, SlurryConnectorSettings>> inserted, @Nonnull IControllerContext context, @Nonnull SlurryStack stack) {
         World world = context.getControllerWorld();
         long amount = stack.getAmount();
-        for (int j = 0; j < pigmentConsumers.size(); j++) {
-            int i = (j + roundRobinOffset) % pigmentConsumers.size();
-            Pair<SidedConsumer, PigmentConnectorSettings> entry = pigmentConsumers.get(i);
+        for (int j = 0; j < slurryConsumers.size(); j++) {
+            int i = (j + roundRobinOffset) % slurryConsumers.size();
+            Pair<SidedConsumer, SlurryConnectorSettings> entry = slurryConsumers.get(i);
             SidedConsumer consumer = entry.getFirst();
-            PigmentConnectorSettings settings = entry.getSecond();
+            SlurryConnectorSettings settings = entry.getSecond();
 
             if (settings.getMatcher() == null || settings.getMatcher().equals(stack)) {
                 BlockPos consumerPos = context.findConsumerPosition(consumer.getConsumerId());
@@ -230,15 +224,15 @@ public class PigmentChannelSettings extends DefaultChannelSettings implements IC
                     BlockPos pos = consumerPos.relative(consumer.getSide());
                     TileEntity te = world.getBlockEntity(pos);
 
-                    Optional<IPigmentHandler> optional = PigmentUtils.getPigmentHandlerFor(te, settings.getFacing());
+                    Optional<ISlurryHandler> optional = SlurryUtils.getSlurryHandlerFor(te, settings.getFacing());
                     if (optional.isPresent()) {
-                        IPigmentHandler handler = optional.get();
+                        ISlurryHandler handler = optional.get();
 
                         long toInsert = Math.min(settings.getRate(), amount);
 
                         Integer count = settings.getMinmax();
                         if (count != null) {
-                            long a = PigmentUtils.getPigmentCount(handler, settings.getFacing(), settings.getMatcher());
+                            long a = SlurryUtils.getSlurryCount(handler, settings.getFacing(), settings.getMatcher());
                             long canInsert = count - a;
                             if (canInsert <= 0) {
                                 continue;
@@ -246,12 +240,12 @@ public class PigmentChannelSettings extends DefaultChannelSettings implements IC
                             toInsert = Math.min(toInsert, canInsert);
                         }
 
-                        if (channelMode == PigmentChannelSettings.ChannelMode.PRIORITY) {
+                        if (channelMode == ChannelMode.PRIORITY) {
 
-                            // Skip current consumer if there is one that accepts the same pigment but has higher priority.
-                            if (pigmentConsumers.stream().anyMatch(_entry -> {
+                            // Skip current consumer if there is one that accepts the same gas but has higher priority
+                            if (slurryConsumers.stream().anyMatch(_entry -> {
                                 SidedConsumer _consumer = _entry.getFirst();
-                                PigmentConnectorSettings _settings = _entry.getSecond();
+                                SlurryConnectorSettings _settings = _entry.getSecond();
 
                                 if (_settings.getPriority() <= settings.getPriority()) {
                                     return false;
@@ -267,21 +261,21 @@ public class PigmentChannelSettings extends DefaultChannelSettings implements IC
                                     return false;
                                 }
 
-                                Optional<IPigmentHandler> _optional = PigmentUtils.getPigmentHandlerFor(world.getBlockEntity(_pos), _settings.getFacing());
+                                Optional<ISlurryHandler> _optional = SlurryUtils.getSlurryHandlerFor(world.getBlockEntity(_pos), _settings.getFacing());
                                 if (_optional.isPresent()) {
-                                    IPigmentHandler _handler = _optional.get();
+                                    ISlurryHandler _handler = _optional.get();
 
-                                    List<Pigment> handlerPigments = PigmentUtils.getPigmentInTank(handler, consumer.getSide());
-                                    List<Pigment> _handlerPigments = PigmentUtils.getPigmentInTank(_handler, _consumer.getSide());
+                                    List<Slurry> handlerSlurries = SlurryUtils.getSlurryInTank(handler, consumer.getSide());
+                                    List<Slurry> _handlerSlurries = SlurryUtils.getSlurryInTank(_handler, _consumer.getSide());
 
-                                    if (Collections.disjoint(handlerPigments, _handlerPigments)) {
+                                    if (Collections.disjoint(handlerSlurries, _handlerSlurries)) {
                                         return false;
                                     }
 
-                                    PigmentStack matcher = settings.getMatcher();
-                                    PigmentStack _matcher = _settings.getMatcher();
+                                    SlurryStack matcher = settings.getMatcher();
+                                    SlurryStack _matcher = _settings.getMatcher();
 
-                                    return (matcher == null || handlerPigments.contains(matcher.getType())) && (_matcher == null || _handlerPigments.contains(_matcher.getType()));
+                                    return (matcher == null || handlerSlurries.contains(matcher.getType())) && (_matcher == null || _handlerSlurries.contains(_matcher.getType()));
                                 }
                                 return false;
                             })) {
@@ -289,10 +283,10 @@ public class PigmentChannelSettings extends DefaultChannelSettings implements IC
                             }
                         }
 
-                        PigmentStack copy = stack.copy();
+                        SlurryStack copy = stack.copy();
                         copy.setAmount(toInsert);
 
-                        PigmentStack remaining = PigmentUtils.insertPigment(handler, copy, settings.getFacing(), Action.SIMULATE);
+                        SlurryStack remaining = SlurryUtils.insertSlurry(handler, copy, settings.getFacing(), Action.SIMULATE);
                         if (remaining.isEmpty() || (!remaining.isEmpty() && copy.getAmount() != remaining.getAmount())) {
                             inserted.add(entry);
                             amount -= (copy.getAmount() - remaining.getAmount());
@@ -307,26 +301,26 @@ public class PigmentChannelSettings extends DefaultChannelSettings implements IC
         return amount;
     }
 
-    private void insertPigmentReal(@Nonnull IControllerContext context, @Nonnull List<Pair<SidedConsumer, PigmentConnectorSettings>> inserted, @Nonnull PigmentStack stack) {
+    private void insertSlurryReal(@Nonnull IControllerContext context, @Nonnull List<Pair<SidedConsumer, SlurryConnectorSettings>> inserted, @Nonnull SlurryStack stack) {
         long amount = stack.getAmount();
-        for (Pair<SidedConsumer, PigmentConnectorSettings> pair : inserted) {
+        for (Pair<SidedConsumer, SlurryConnectorSettings> pair : inserted) {
 
-            PigmentConnectorSettings settings = pair.getSecond();
+            SlurryConnectorSettings settings = pair.getSecond();
             BlockPos consumerPosition = context.findConsumerPosition(pair.getFirst().getConsumerId());
 
             assert consumerPosition != null;
             BlockPos pos = consumerPosition.relative(pair.getFirst().getSide());
             TileEntity te = context.getControllerWorld().getBlockEntity(pos);
 
-            Optional<IPigmentHandler> optional = PigmentUtils.getPigmentHandlerFor(te, settings.getFacing());
+            Optional<ISlurryHandler> optional = SlurryUtils.getSlurryHandlerFor(te, settings.getFacing());
             if (optional.isPresent()) {
-                IPigmentHandler handler = optional.get();
+                ISlurryHandler handler = optional.get();
 
                 long toInsert = Math.min(settings.getRate(), amount);
 
                 Integer count = settings.getMinmax();
                 if (count != null) {
-                    long a = PigmentUtils.getPigmentCount(handler, settings.getFacing(), settings.getMatcher());
+                    long a = SlurryUtils.getSlurryCount(handler, settings.getFacing(), settings.getMatcher());
                     long caninsert = count - a;
                     if (caninsert <= 0) {
                         continue;
@@ -334,12 +328,12 @@ public class PigmentChannelSettings extends DefaultChannelSettings implements IC
                     toInsert = Math.min(toInsert, caninsert);
                 }
 
-                PigmentStack copy = stack.copy();
+                SlurryStack copy = stack.copy();
                 copy.setAmount(toInsert);
 
-                PigmentStack remaining = PigmentUtils.insertPigment(handler, copy, settings.getFacing(), Action.EXECUTE);
+                SlurryStack remaining = SlurryUtils.insertSlurry(handler, copy, settings.getFacing(), Action.EXECUTE);
                 if (remaining.isEmpty() || (!remaining.isEmpty() && copy.getAmount() != remaining.getAmount())) {
-                    roundRobinOffset = (roundRobinOffset + 1) % pigmentConsumers.size();
+                    roundRobinOffset = (roundRobinOffset + 1) % slurryConsumers.size();
                     amount -= (copy.getAmount() - remaining.getAmount());
                     if (amount <= 0) {
                         return;
@@ -350,9 +344,9 @@ public class PigmentChannelSettings extends DefaultChannelSettings implements IC
     }
 
     private void updateCache(int channel, IControllerContext context) {
-        if (this.pigmentExtractors == null) {
-            this.pigmentExtractors = new ArrayList<>();
-            this.pigmentConsumers = new ArrayList<>();
+        if (this.slurryExtractors == null) {
+            this.slurryExtractors = new ArrayList<>();
+            this.slurryConsumers = new ArrayList<>();
 
             Map<SidedConsumer, IConnectorSettings> connectors = context.getConnectors(channel);
             Iterator<Map.Entry<SidedConsumer, IConnectorSettings>> iterator = connectors.entrySet().iterator();
@@ -360,11 +354,11 @@ public class PigmentChannelSettings extends DefaultChannelSettings implements IC
             while (iterator.hasNext()) {
                 Map.Entry<SidedConsumer, IConnectorSettings> entry = iterator.next();
                 SidedConsumer consumer = entry.getKey();
-                PigmentConnectorSettings settings = (PigmentConnectorSettings) entry.getValue();
-                if (settings.getPigmentMode() == PigmentConnectorSettings.PigmentMode.EXT) {
-                    this.pigmentExtractors.add(Pair.of(consumer, settings));
+                SlurryConnectorSettings settings = (SlurryConnectorSettings) entry.getValue();
+                if (settings.getSlurryMode() == SlurryConnectorSettings.SlurryMode.EXT) {
+                    this.slurryExtractors.add(Pair.of(consumer, settings));
                 } else {
-                    this.pigmentConsumers.add(Pair.of(entry.getKey(), settings));
+                    this.slurryConsumers.add(Pair.of(consumer, settings));
                 }
             }
 
@@ -374,46 +368,29 @@ public class PigmentChannelSettings extends DefaultChannelSettings implements IC
             while (iterator.hasNext()) {
                 Map.Entry<SidedConsumer, IConnectorSettings> entry = iterator.next();
                 SidedConsumer consumer = entry.getKey();
-                PigmentConnectorSettings settings = (PigmentConnectorSettings) entry.getValue();
-                if (settings.getPigmentMode() == PigmentConnectorSettings.PigmentMode.INS) {
-                    this.pigmentConsumers.add(Pair.of(consumer, settings));
+                SlurryConnectorSettings settings = (SlurryConnectorSettings) entry.getValue();
+                if (settings.getSlurryMode() == SlurryConnectorSettings.SlurryMode.INS) {
+                    this.slurryConsumers.add(Pair.of(consumer, settings));
                 }
             }
 
-            this.pigmentConsumers.sort((o1, o2) -> (o2.getSecond()).getPriority().compareTo((o1.getSecond()).getPriority()));
+            this.slurryConsumers.sort((o1, o2) -> (o2.getSecond()).getPriority().compareTo((o1.getSecond()).getPriority()));
         }
-    }
-
-    @Override
-    public boolean isEnabled(String tag) {
-        return true;
     }
 
     @Nullable
     @Override
     public IndicatorIcon getIndicatorIcon() {
-        return new IndicatorIcon(iconGuiElements, 0, 90, 11, 10);
-    }
-
-    @Nullable
-    @Override
-    public String getIndicator() {
-        return null;
+        return new IndicatorIcon(XNET_GUI_ELEMENTS, 0, 90, 11, 10);
     }
 
     @Override
     public void createGui(IEditorGui gui) {
-        gui.nl().choices(TAG_MODE, "Pigment distribution mode", this.channelMode, PigmentChannelSettings.ChannelMode.values());
+        gui.nl().choices(TAG_MODE, "Slurry distribution mode", this.channelMode, SlurryChannelSettings.ChannelMode.values());
     }
 
     @Override
     public void update(Map<String, Object> data) {
-        this.channelMode = PigmentChannelSettings.ChannelMode.valueOf(((String) data.get(TAG_MODE)).toUpperCase());
+        this.channelMode = SlurryChannelSettings.ChannelMode.valueOf(((String) data.get(TAG_MODE)).toUpperCase());
     }
-
-    @Override
-    public int getColors() {
-        return 0;
-    }
-
 }

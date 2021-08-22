@@ -1,4 +1,4 @@
-package terrails.xnetgases.infuse;
+package terrails.xnetgases.module.infuse;
 
 import mekanism.api.Action;
 import mekanism.api.chemical.infuse.IInfusionHandler;

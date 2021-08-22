@@ -1,4 +1,4 @@
-package terrails.xnetgases.logic;
+package terrails.xnetgases.module.logic;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.JsonArray;
@@ -8,10 +8,8 @@ import com.google.gson.JsonPrimitive;
 import mcjty.rftoolsbase.api.xnet.gui.IEditorGui;
 import mcjty.rftoolsbase.api.xnet.gui.IndicatorIcon;
 import mcjty.rftoolsbase.api.xnet.helper.AbstractConnectorSettings;
-import mcjty.xnet.XNet;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.Direction;
-import net.minecraft.util.ResourceLocation;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -20,13 +18,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static terrails.xnetgases.Constants.*;
+
 public class XGLogicConnectorSettings extends AbstractConnectorSettings {
 
-    public static final ResourceLocation iconGuiElements = new ResourceLocation(XNet.MODID, "textures/gui/guielements.png");
-
-    public static final String TAG_MODE = "mode";
-    public static final String TAG_SPEED = "speed";
     public static final String TAG_REDSTONE_OUT = "rsout";
+    public static final String TAG_SENSORS = "sensors";
+    public static final String TAG_COLORS = "colors";
+
+    private static final Set<String> TAGS = ImmutableSet.of(TAG_REDSTONE_OUT, TAG_MODE, TAG_RS, TAG_COLOR+"0", TAG_COLOR+"1", TAG_COLOR+"2", TAG_COLOR+"3");
 
     public enum LogicMode {
         SENSOR,
@@ -71,9 +71,9 @@ public class XGLogicConnectorSettings extends AbstractConnectorSettings {
     public IndicatorIcon getIndicatorIcon() {
         switch (logicMode) {
             case SENSOR:
-                return new IndicatorIcon(iconGuiElements, 26, 70, 13, 10);
+                return new IndicatorIcon(XNET_GUI_ELEMENTS, 26, 70, 13, 10);
             case OUTPUT:
-                return new IndicatorIcon(iconGuiElements, 39, 70, 13, 10);
+                return new IndicatorIcon(XNET_GUI_ELEMENTS, 39, 70, 13, 10);
         }
         return null;
     }
@@ -84,7 +84,6 @@ public class XGLogicConnectorSettings extends AbstractConnectorSettings {
         return null;
     }
 
-    private static final Set<String> TAGS = ImmutableSet.of(TAG_REDSTONE_OUT, TAG_MODE, TAG_RS, TAG_COLOR+"0", TAG_COLOR+"1", TAG_COLOR+"2", TAG_COLOR+"3");
 
     @Override
     public boolean isEnabled(String tag) {
@@ -165,15 +164,15 @@ public class XGLogicConnectorSettings extends AbstractConnectorSettings {
     public JsonObject writeToJson() {
         JsonObject object = new JsonObject();
         super.writeToJsonInternal(object);
-        setEnumSafe(object, "logicmode", logicMode);
-        setIntegerSafe(object, "speed", speed);
+        setEnumSafe(object, TAG_MODE, logicMode);
+        setIntegerSafe(object, TAG_SPEED, speed);
         JsonArray sensorArray = new JsonArray();
         for (XGSensor sensor : sensors) {
             JsonObject o = new JsonObject();
             sensor.writeToJson(o);
             sensorArray.add(o);
         }
-        object.add("sensors", sensorArray);
+        object.add(TAG_SENSORS, sensorArray);
         if (speed == 1) {
             object.add("advancedneeded", new JsonPrimitive(true));
         }
@@ -183,9 +182,11 @@ public class XGLogicConnectorSettings extends AbstractConnectorSettings {
     @Override
     public void readFromJson(JsonObject object) {
         super.readFromJsonInternal(object);
-        logicMode = getEnumSafe(object, "logicmode", LogicUtils::getLogicModeFrom);
-        speed = getIntegerNotNull(object, "speed");
-        JsonArray sensorArray = object.get("sensors").getAsJsonArray();
+        if (object.has("logicmode")) {
+            logicMode = getEnumSafe(object, "logicmode", LogicUtils::getLogicModeFrom);
+        } else logicMode = getEnumSafe(object, TAG_MODE, LogicUtils::getLogicModeFrom);
+        speed = getIntegerNotNull(object, TAG_SPEED);
+        JsonArray sensorArray = object.get(TAG_SENSORS).getAsJsonArray();
         sensors.clear();
         for (JsonElement oe : sensorArray) {
             JsonObject o = oe.getAsJsonObject();
@@ -198,29 +199,31 @@ public class XGLogicConnectorSettings extends AbstractConnectorSettings {
     @Override
     public void readFromNBT(CompoundNBT tag) {
         super.readFromNBT(tag);
-        logicMode = LogicMode.values()[tag.getByte("logicMode")];
-        speed = tag.getInt("speed");
+        if (tag.contains("logicMode")) {
+            logicMode = LogicMode.values()[tag.getByte("logicMode")];
+        } else logicMode = LogicMode.values()[tag.getByte(TAG_MODE)];
+        speed = tag.getInt(TAG_SPEED);
         if (speed == 0) {
             speed = 2;
         }
-        colors = tag.getInt("colors");
+        colors = tag.getInt(TAG_COLORS);
         for (XGSensor sensor : sensors) {
             sensor.readFromNBT(tag);
         }
-        redstoneOut = tag.getInt("rsout");
+        redstoneOut = tag.getInt(TAG_REDSTONE_OUT);
     }
 
     @Override
     public void writeToNBT(CompoundNBT tag) {
         super.writeToNBT(tag);
-        tag.putByte("logicMode", (byte) logicMode.ordinal());
-        tag.putInt("speed", speed);
-        tag.putInt("colors", colors);
+        tag.putByte(TAG_MODE, (byte) logicMode.ordinal());
+        tag.putInt(TAG_SPEED, speed);
+        tag.putInt(TAG_COLORS, colors);
         for (XGSensor sensor : sensors) {
             sensor.writeToNBT(tag);
         }
         if (redstoneOut != null) {
-            tag.putInt("rsout", redstoneOut);
+            tag.putInt(TAG_REDSTONE_OUT, redstoneOut);
         }
     }
 }

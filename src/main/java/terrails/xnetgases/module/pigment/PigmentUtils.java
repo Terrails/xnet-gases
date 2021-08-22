@@ -1,4 +1,4 @@
-package terrails.xnetgases.pigment;
+package terrails.xnetgases.module.pigment;
 
 import mekanism.api.Action;
 import mekanism.api.chemical.pigment.IPigmentHandler;

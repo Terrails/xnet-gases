@@ -1,4 +1,4 @@
-package terrails.xnetgases.logic;
+package terrails.xnetgases.module.logic;
 
 import javax.annotation.Nonnull;
 import java.util.HashMap;

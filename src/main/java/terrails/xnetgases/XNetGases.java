@@ -2,6 +2,7 @@ package terrails.xnetgases;
 
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 import com.electronwill.nightconfig.core.io.WritingMode;
+import mcjty.rftoolsbase.api.xnet.channels.IConnectable;
 import mcjty.xnet.XNet;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -13,17 +14,19 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.loading.FMLPaths;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import terrails.xnetgases.gas.GasChannelType;
-import terrails.xnetgases.gas.GasConnectable;
-import terrails.xnetgases.infuse.InfuseChannelType;
-import terrails.xnetgases.infuse.InfuseConnectable;
-import terrails.xnetgases.logic.XGLogicChannelType;
-import terrails.xnetgases.pigment.PigmentChannelType;
-import terrails.xnetgases.pigment.PigmentConnectable;
-import terrails.xnetgases.slurry.SlurryChannelType;
-import terrails.xnetgases.slurry.SlurryConnectable;
+import terrails.xnetgases.helper.ChannelModule;
+import terrails.xnetgases.module.gas.GasChannelModule;
+import terrails.xnetgases.module.gas.GasUtils;
+import terrails.xnetgases.module.infuse.InfuseChannelModule;
+import terrails.xnetgases.module.infuse.InfuseUtils;
+import terrails.xnetgases.module.logic.XGLogicChannelModule;
+import terrails.xnetgases.module.pigment.PigmentChannelModule;
+import terrails.xnetgases.module.pigment.PigmentUtils;
+import terrails.xnetgases.module.slurry.SlurryChannelModule;
+import terrails.xnetgases.module.slurry.SlurryUtils;
 
 import java.nio.file.Path;
+import java.util.Arrays;
 
 @Mod(XNetGases.MOD_ID)
 public class XNetGases {
@@ -31,19 +34,15 @@ public class XNetGases {
     public static final String MOD_ID = "xnetgases";
     public static final Logger LOGGER = LogManager.getLogger();
 
-    public static ForgeConfigSpec.IntValue maxGasRateNormal;
-    public static ForgeConfigSpec.IntValue maxGasRateAdvanced;
-
-    public static ForgeConfigSpec.IntValue maxSlurryRateNormal;
-    public static ForgeConfigSpec.IntValue maxSlurryRateAdvanced;
-
-    public static ForgeConfigSpec.IntValue maxInfuseRateNormal;
-    public static ForgeConfigSpec.IntValue maxInfuseRateAdvanced;
-
-    public static ForgeConfigSpec.IntValue maxPigmentRateNormal;
-    public static ForgeConfigSpec.IntValue maxPigmentRateAdvanced;
-
     private static final ForgeConfigSpec CONFIG_SPEC;
+
+    private static final ChannelModule[] MODULES = {
+            new GasChannelModule(),
+            new InfuseChannelModule(),
+            new XGLogicChannelModule(),
+            new PigmentChannelModule(),
+            new SlurryChannelModule()
+    };
 
     public XNetGases() {
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, CONFIG_SPEC, "xnetgases.toml");
@@ -54,53 +53,22 @@ public class XNetGases {
     private void setup(final FMLCommonSetupEvent event) {
         loadConfig(FMLPaths.CONFIGDIR.get().resolve("xnetgases.toml"));
 
-        XNet.xNetApi.registerChannelType(new GasChannelType());
-        XNet.xNetApi.registerConnectable(new GasConnectable());
+        Arrays.stream(MODULES).forEach(module -> XNet.xNetApi.registerChannelType(module));
 
-        XNet.xNetApi.registerChannelType(new SlurryChannelType());
-        XNet.xNetApi.registerConnectable(new SlurryConnectable());
-
-        XNet.xNetApi.registerChannelType(new InfuseChannelType());
-        XNet.xNetApi.registerConnectable(new InfuseConnectable());
-
-        XNet.xNetApi.registerChannelType(new PigmentChannelType());
-        XNet.xNetApi.registerConnectable(new PigmentConnectable());
-
-        XNet.xNetApi.registerChannelType(new XGLogicChannelType());
+        XNet.xNetApi.registerConnectable((reader, connectorPos, blockPos, tile, direction) -> {
+            if (GasUtils.getGasHandlerFor(tile, direction).isPresent()
+                    || SlurryUtils.getSlurryHandlerFor(tile, direction).isPresent()
+                    || InfuseUtils.getInfuseHandlerFor(tile, direction).isPresent()
+                    || PigmentUtils.getPigmentHandlerFor(tile, direction).isPresent()) {
+                return IConnectable.ConnectResult.YES;
+            } else return IConnectable.ConnectResult.DEFAULT;
+        });
     }
 
     static {
         final ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
         builder.comment("General settings").push("general");
-
-        maxGasRateNormal = builder
-                .comment("Maximum gas per operation that a normal connector can input or output")
-                .defineInRange("maxGasRateNormal", 1000, 1, 1000000000);
-        maxGasRateAdvanced = builder
-                .comment("Maximum gas per operation that an advanced connector can input or output")
-                .defineInRange("maxGasRateAdvanced", 5000, 1, 1000000000);
-
-        maxSlurryRateNormal = builder
-                .comment("Maximum slurry per operation that a normal connector can input or output")
-                .defineInRange("maxSlurryRateNormal", 1000, 1, 1000000000);
-        maxSlurryRateAdvanced = builder
-                .comment("Maximum slurry per operation that an advanced connector can input or output")
-                .defineInRange("maxSlurryRateAdvanced", 5000, 1, 1000000000);
-
-        maxInfuseRateNormal = builder
-                .comment("Maximum infuse per operation that a normal connector can input or output")
-                .defineInRange("maxInfuseRateNormal", 1000, 1, 1000000000);
-        maxInfuseRateAdvanced = builder
-                .comment("Maximum infuse per operation that an advanced connector can input or output")
-                .defineInRange("maxInfuseRateAdvanced", 5000, 1, 1000000000);
-
-        maxPigmentRateNormal = builder
-                .comment("Maximum pigment per operation that a normal connector can input or output")
-                .defineInRange("maxPigmentRateNormal", 1000, 1, 1000000000);
-        maxPigmentRateAdvanced = builder
-                .comment("Maximum pigment per operation that an advanced connector can input or output")
-                .defineInRange("maxPigmentRateAdvanced", 5000, 1, 1000000000);
-
+        Arrays.stream(MODULES).forEach(module -> module.setupConfig(builder));
         CONFIG_SPEC = builder.pop().build();
     }
 

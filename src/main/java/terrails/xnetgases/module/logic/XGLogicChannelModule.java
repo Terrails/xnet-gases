@@ -1,21 +1,21 @@
-package terrails.xnetgases.logic;
+package terrails.xnetgases.module.logic;
 
 import mcjty.rftoolsbase.api.xnet.channels.IChannelSettings;
-import mcjty.rftoolsbase.api.xnet.channels.IChannelType;
 import mcjty.rftoolsbase.api.xnet.channels.IConnectorSettings;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import terrails.xnetgases.gas.GasUtils;
-import terrails.xnetgases.infuse.InfuseUtils;
-import terrails.xnetgases.pigment.PigmentUtils;
-import terrails.xnetgases.slurry.SlurryUtils;
+import terrails.xnetgases.helper.ChannelModule;
+import terrails.xnetgases.module.gas.GasUtils;
+import terrails.xnetgases.module.infuse.InfuseUtils;
+import terrails.xnetgases.module.pigment.PigmentUtils;
+import terrails.xnetgases.module.slurry.SlurryUtils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class XGLogicChannelType implements IChannelType {
+public class XGLogicChannelModule extends ChannelModule {
 
     @Override
     public String getID() {

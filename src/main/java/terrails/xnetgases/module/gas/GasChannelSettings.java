@@ -1,17 +1,14 @@
-package terrails.xnetgases.gas;
+package terrails.xnetgases.module.gas;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.mojang.datafixers.util.Pair;
 import mcjty.lib.varia.WorldTools;
-import mcjty.rftoolsbase.api.xnet.channels.IChannelSettings;
 import mcjty.rftoolsbase.api.xnet.channels.IConnectorSettings;
 import mcjty.rftoolsbase.api.xnet.channels.IControllerContext;
 import mcjty.rftoolsbase.api.xnet.gui.IEditorGui;
 import mcjty.rftoolsbase.api.xnet.gui.IndicatorIcon;
-import mcjty.rftoolsbase.api.xnet.helper.DefaultChannelSettings;
 import mcjty.rftoolsbase.api.xnet.keys.SidedConsumer;
-import mcjty.xnet.XNet;
 import mcjty.xnet.setup.Config;
 import mekanism.api.Action;
 import mekanism.api.chemical.gas.Gas;
@@ -19,19 +16,17 @@ import mekanism.api.chemical.gas.GasStack;
 import mekanism.api.chemical.gas.IGasHandler;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import terrails.xnetgases.helper.ChemicalChannelSettings;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
 
-public class GasChannelSettings extends DefaultChannelSettings implements IChannelSettings {
+import static terrails.xnetgases.Constants.*;
 
-    public static final ResourceLocation iconGuiElements = new ResourceLocation(XNet.MODID, "textures/gui/guielements.png");
-
-    public static final String TAG_MODE = "mode";
+public class GasChannelSettings extends ChemicalChannelSettings {
 
     public enum ChannelMode {
         PRIORITY,
@@ -383,21 +378,10 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
         }
     }
 
-    @Override
-    public boolean isEnabled(String tag) {
-        return true;
-    }
-
     @Nullable
     @Override
     public IndicatorIcon getIndicatorIcon() {
-        return new IndicatorIcon(iconGuiElements, 0, 90, 11, 10);
-    }
-
-    @Nullable
-    @Override
-    public String getIndicator() {
-        return null;
+        return new IndicatorIcon(XNET_GUI_ELEMENTS, 0, 90, 11, 10);
     }
 
     @Override
@@ -408,10 +392,5 @@ public class GasChannelSettings extends DefaultChannelSettings implements IChann
     @Override
     public void update(Map<String, Object> data) {
         this.channelMode = GasChannelSettings.ChannelMode.valueOf(((String) data.get(TAG_MODE)).toUpperCase());
-    }
-
-    @Override
-    public int getColors() {
-        return 0;
     }
 }

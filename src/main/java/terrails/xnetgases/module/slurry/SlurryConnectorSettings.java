@@ -1,4 +1,4 @@
-package terrails.xnetgases.slurry;
+package terrails.xnetgases.module.slurry;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.JsonObject;
@@ -7,31 +7,21 @@ import mcjty.lib.varia.JSonTools;
 import mcjty.rftoolsbase.api.xnet.gui.IEditorGui;
 import mcjty.rftoolsbase.api.xnet.gui.IndicatorIcon;
 import mcjty.rftoolsbase.api.xnet.helper.AbstractConnectorSettings;
-import mcjty.xnet.XNet;
 import mekanism.api.chemical.slurry.ISlurryHandler;
 import mekanism.api.chemical.slurry.SlurryStack;
 import mekanism.common.capabilities.Capabilities;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.Direction;
-import net.minecraft.util.ResourceLocation;
-import terrails.xnetgases.XNetGases;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Set;
 
+import static terrails.xnetgases.Constants.*;
+
 public class SlurryConnectorSettings extends AbstractConnectorSettings {
-
-    public static final ResourceLocation iconGuiElements = new ResourceLocation(XNet.MODID, "textures/gui/guielements.png");
-
-    public static final String TAG_MODE = "mode";
-    public static final String TAG_RATE = "rate";
-    public static final String TAG_MINMAX = "minmax";
-    public static final String TAG_PRIORITY = "priority";
-    public static final String TAG_FILTER = "flt";
-    public static final String TAG_SPEED = "speed";
 
     public enum SlurryMode {
         INS,
@@ -67,7 +57,7 @@ public class SlurryConnectorSettings extends AbstractConnectorSettings {
 
     @Nonnull
     public Integer getRate() {
-        return rate == null ? XNetGases.maxSlurryRateNormal.get() : rate;
+        return rate == null ? SlurryChannelModule.maxSlurryRateNormal.get() : rate;
     }
 
     @Nullable
@@ -80,9 +70,9 @@ public class SlurryConnectorSettings extends AbstractConnectorSettings {
     public IndicatorIcon getIndicatorIcon() {
         switch (slurryMode) {
             case INS:
-                return new IndicatorIcon(iconGuiElements, 0, 70, 13, 10);
+                return new IndicatorIcon(XNET_GUI_ELEMENTS, 0, 70, 13, 10);
             case EXT:
-                return new IndicatorIcon(iconGuiElements, 13, 70, 13, 10);
+                return new IndicatorIcon(XNET_GUI_ELEMENTS, 13, 70, 13, 10);
         }
         return null;
     }
@@ -100,10 +90,10 @@ public class SlurryConnectorSettings extends AbstractConnectorSettings {
         int maxRate;
         if (advanced) {
             speeds = new String[] { "10", "20", "60", "100", "200" };
-            maxRate = XNetGases.maxSlurryRateAdvanced.get();
+            maxRate = SlurryChannelModule.maxSlurryRateAdvanced.get();
         } else {
             speeds = new String[] { "20", "60", "100", "200" };
-            maxRate = XNetGases.maxSlurryRateNormal.get();
+            maxRate = SlurryChannelModule.maxSlurryRateNormal.get();
         }
 
         sideGui(gui);
@@ -176,15 +166,15 @@ public class SlurryConnectorSettings extends AbstractConnectorSettings {
     public JsonObject writeToJson() {
         JsonObject object = new JsonObject();
         super.writeToJsonInternal(object);
-        setEnumSafe(object, "slurrymode", slurryMode);
-        setIntegerSafe(object, "priority", priority);
-        setIntegerSafe(object, "rate", rate);
-        setIntegerSafe(object, "minmax", minmax);
-        setIntegerSafe(object, "speed", speed);
+        setEnumSafe(object, TAG_MODE, slurryMode);
+        setIntegerSafe(object, TAG_PRIORITY, priority);
+        setIntegerSafe(object, TAG_RATE, rate);
+        setIntegerSafe(object, TAG_MINMAX, minmax);
+        setIntegerSafe(object, TAG_SPEED, speed);
         if (!filter.isEmpty()) {
-            object.add("filter", JSonTools.itemStackToJson(filter));
+            object.add(TAG_FILTER, JSonTools.itemStackToJson(filter));
         }
-        if (rate != null && rate > XNetGases.maxSlurryRateNormal.get()) {
+        if (rate != null && rate > SlurryChannelModule.maxSlurryRateNormal.get()) {
             object.add("advancedneeded", new JsonPrimitive(true));
         }
         if (speed == 1) {
@@ -196,13 +186,15 @@ public class SlurryConnectorSettings extends AbstractConnectorSettings {
     @Override
     public void readFromJson(JsonObject object) {
         super.readFromJsonInternal(object);
-        slurryMode = getEnumSafe(object, "slurrymode", SlurryUtils::getConnectorModeFrom);
-        priority = getIntegerSafe(object, "priority");
-        rate = getIntegerSafe(object, "rate");
-        minmax = getIntegerSafe(object, "minmax");
-        speed = getIntegerNotNull(object, "speed");
-        if (object.has("filter")) {
-            filter = JSonTools.jsonToItemStack(object.get("filter").getAsJsonObject());
+        if (object.has("slurrymode")) {
+            slurryMode = getEnumSafe(object, "slurrymode", SlurryUtils::getConnectorModeFrom);
+        } else slurryMode = getEnumSafe(object, TAG_MODE, SlurryUtils::getConnectorModeFrom);
+        priority = getIntegerSafe(object, TAG_PRIORITY);
+        rate = getIntegerSafe(object, TAG_RATE);
+        minmax = getIntegerSafe(object, TAG_MINMAX);
+        speed = getIntegerNotNull(object, TAG_SPEED);
+        if (object.has(TAG_FILTER)) {
+            filter = JSonTools.jsonToItemStack(object.get(TAG_FILTER).getAsJsonObject());
         } else {
             filter = ItemStack.EMPTY;
         }
@@ -211,52 +203,49 @@ public class SlurryConnectorSettings extends AbstractConnectorSettings {
     @Override
     public void readFromNBT(CompoundNBT tag) {
         super.readFromNBT(tag);
-        slurryMode = SlurryConnectorSettings.SlurryMode.values()[tag.getByte("slurryMode")];
-        if (tag.contains("priority")) {
-            priority = tag.getInt("priority");
-        } else {
-            priority = null;
-        }
-        if (tag.contains("rate")) {
-            rate = tag.getInt("rate");
-        } else {
-            rate = null;
-        }
-        if (tag.contains("minmax")) {
-            minmax = tag.getInt("minmax");
-        } else {
-            minmax = null;
-        }
-        speed = tag.getInt("speed");
-        if (speed == 0) {
-            speed = 2;
-        }
-        if (tag.contains("filter")) {
-            CompoundNBT itemTag = tag.getCompound("filter");
+        if (tag.contains("slurryMode")) {
+            slurryMode = SlurryConnectorSettings.SlurryMode.values()[tag.getByte("slurryMode")];
+        } else slurryMode = SlurryConnectorSettings.SlurryMode.values()[tag.getByte(TAG_MODE)];
+
+        if (tag.contains(TAG_PRIORITY)) {
+            priority = tag.getInt(TAG_PRIORITY);
+        } else priority = null;
+
+        if (tag.contains(TAG_RATE)) {
+            rate = tag.getInt(TAG_RATE);
+        } else rate = null;
+
+        if (tag.contains(TAG_MINMAX)) {
+            minmax = tag.getInt(TAG_MINMAX);
+        } else minmax = null;
+
+        speed = tag.getInt(TAG_SPEED);
+        if (speed == 0) speed = 2;
+
+        if (tag.contains(TAG_FILTER)) {
+            CompoundNBT itemTag = tag.getCompound(TAG_FILTER);
             filter = ItemStack.of(itemTag);
-        } else {
-            filter = ItemStack.EMPTY;
-        }
+        } else filter = ItemStack.EMPTY;
     }
 
     @Override
     public void writeToNBT(CompoundNBT tag) {
         super.writeToNBT(tag);
-        tag.putByte("slurryMode", (byte) slurryMode.ordinal());
+        tag.putByte(TAG_MODE, (byte) slurryMode.ordinal());
         if (priority != null) {
-            tag.putInt("priority", priority);
+            tag.putInt(TAG_PRIORITY, priority);
         }
         if (rate != null) {
-            tag.putInt("rate", rate);
+            tag.putInt(TAG_RATE, rate);
         }
         if (minmax != null) {
-            tag.putInt("minmax", minmax);
+            tag.putInt(TAG_MINMAX, minmax);
         }
-        tag.putInt("speed", speed);
+        tag.putInt(TAG_SPEED, speed);
         if (!filter.isEmpty()) {
             CompoundNBT itemTag = new CompoundNBT();
             filter.save(itemTag);
-            tag.put("filter", itemTag);
+            tag.put(TAG_FILTER, itemTag);
         }
     }
 }

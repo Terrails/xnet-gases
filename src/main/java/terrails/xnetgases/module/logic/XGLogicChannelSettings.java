@@ -1,4 +1,4 @@
-package terrails.xnetgases.logic;
+package terrails.xnetgases.module.logic;
 
 import com.google.gson.JsonObject;
 import mcjty.lib.varia.WorldTools;
@@ -9,12 +9,10 @@ import mcjty.rftoolsbase.api.xnet.gui.IEditorGui;
 import mcjty.rftoolsbase.api.xnet.gui.IndicatorIcon;
 import mcjty.rftoolsbase.api.xnet.helper.DefaultChannelSettings;
 import mcjty.rftoolsbase.api.xnet.keys.SidedConsumer;
-import mcjty.xnet.XNet;
 import mcjty.xnet.modules.cables.blocks.ConnectorTileEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.apache.commons.lang3.tuple.Pair;
@@ -24,9 +22,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class XGLogicChannelSettings extends DefaultChannelSettings implements IChannelSettings {
+import static terrails.xnetgases.Constants.*;
 
-    public static final ResourceLocation iconGuiElements = new ResourceLocation(XNet.MODID, "textures/gui/guielements.png");
+public class XGLogicChannelSettings extends DefaultChannelSettings implements IChannelSettings {
 
     private int delay = 0;
     private int colors = 0;
@@ -171,7 +169,7 @@ public class XGLogicChannelSettings extends DefaultChannelSettings implements IC
     @Nullable
     @Override
     public IndicatorIcon getIndicatorIcon() {
-        return new IndicatorIcon(iconGuiElements, 11, 90, 11, 10);
+        return new IndicatorIcon(XNET_GUI_ELEMENTS, 11, 90, 11, 10);
     }
 
     @Nullable
@@ -186,12 +184,8 @@ public class XGLogicChannelSettings extends DefaultChannelSettings implements IC
     }
 
     @Override
-    public void createGui(IEditorGui iEditorGui) {
-
-    }
+    public void createGui(IEditorGui iEditorGui) { }
 
     @Override
-    public void update(Map<String, Object> map) {
-
-    }
+    public void update(Map<String, Object> map) { }
 }

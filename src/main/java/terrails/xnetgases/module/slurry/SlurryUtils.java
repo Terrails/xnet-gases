@@ -1,4 +1,4 @@
-package terrails.xnetgases.slurry;
+package terrails.xnetgases.module.slurry;
 
 import mekanism.api.Action;
 import mekanism.api.chemical.slurry.ISlurryHandler;

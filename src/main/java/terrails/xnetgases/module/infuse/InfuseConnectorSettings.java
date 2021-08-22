@@ -1,4 +1,4 @@
-package terrails.xnetgases.infuse;
+package terrails.xnetgases.module.infuse;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.JsonObject;
@@ -6,32 +6,22 @@ import com.google.gson.JsonPrimitive;
 import mcjty.lib.varia.JSonTools;
 import mcjty.rftoolsbase.api.xnet.gui.IEditorGui;
 import mcjty.rftoolsbase.api.xnet.gui.IndicatorIcon;
-import mcjty.rftoolsbase.api.xnet.helper.AbstractConnectorSettings;
-import mcjty.xnet.XNet;
 import mekanism.api.chemical.infuse.IInfusionHandler;
 import mekanism.api.chemical.infuse.InfusionStack;
 import mekanism.common.capabilities.Capabilities;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.Direction;
-import net.minecraft.util.ResourceLocation;
-import terrails.xnetgases.XNetGases;
+import terrails.xnetgases.helper.ChemicalConnectorSettings;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Set;
 
-public class InfuseConnectorSettings extends AbstractConnectorSettings {
+import static terrails.xnetgases.Constants.*;
 
-    public static final ResourceLocation iconGuiElements = new ResourceLocation(XNet.MODID, "textures/gui/guielements.png");
-
-    public static final String TAG_MODE = "mode";
-    public static final String TAG_RATE = "rate";
-    public static final String TAG_MINMAX = "minmax";
-    public static final String TAG_PRIORITY = "priority";
-    public static final String TAG_FILTER = "flt";
-    public static final String TAG_SPEED = "speed";
+public class InfuseConnectorSettings extends ChemicalConnectorSettings<InfusionStack> {
 
     public enum InfuseMode {
         INS,
@@ -67,7 +57,7 @@ public class InfuseConnectorSettings extends AbstractConnectorSettings {
 
     @Nonnull
     public Integer getRate() {
-        return rate == null ? XNetGases.maxInfuseRateNormal.get() : rate;
+        return rate == null ? InfuseChannelModule.maxInfuseRateNormal.get() : rate;
     }
 
     @Nullable
@@ -80,9 +70,9 @@ public class InfuseConnectorSettings extends AbstractConnectorSettings {
     public IndicatorIcon getIndicatorIcon() {
         switch (infuseMode) {
             case INS:
-                return new IndicatorIcon(iconGuiElements, 0, 70, 13, 10);
+                return new IndicatorIcon(XNET_GUI_ELEMENTS, 0, 70, 13, 10);
             case EXT:
-                return new IndicatorIcon(iconGuiElements, 13, 70, 13, 10);
+                return new IndicatorIcon(XNET_GUI_ELEMENTS, 13, 70, 13, 10);
         }
         return null;
     }
@@ -100,10 +90,10 @@ public class InfuseConnectorSettings extends AbstractConnectorSettings {
         int maxRate;
         if (advanced) {
             speeds = new String[] { "10", "20", "60", "100", "200" };
-            maxRate = XNetGases.maxInfuseRateAdvanced.get();
+            maxRate = InfuseChannelModule.maxInfuseRateAdvanced.get();
         } else {
             speeds = new String[] { "20", "60", "100", "200" };
-            maxRate = XNetGases.maxInfuseRateNormal.get();
+            maxRate = InfuseChannelModule.maxInfuseRateNormal.get();
         }
 
         sideGui(gui);
@@ -176,15 +166,15 @@ public class InfuseConnectorSettings extends AbstractConnectorSettings {
     public JsonObject writeToJson() {
         JsonObject object = new JsonObject();
         super.writeToJsonInternal(object);
-        setEnumSafe(object, "infusemode", infuseMode);
-        setIntegerSafe(object, "priority", priority);
-        setIntegerSafe(object, "rate", rate);
-        setIntegerSafe(object, "minmax", minmax);
-        setIntegerSafe(object, "speed", speed);
+        setEnumSafe(object, TAG_MODE, infuseMode);
+        setIntegerSafe(object, TAG_PRIORITY, priority);
+        setIntegerSafe(object, TAG_RATE, rate);
+        setIntegerSafe(object, TAG_MINMAX, minmax);
+        setIntegerSafe(object, TAG_SPEED, speed);
         if (!filter.isEmpty()) {
-            object.add("filter", JSonTools.itemStackToJson(filter));
+            object.add(TAG_FILTER, JSonTools.itemStackToJson(filter));
         }
-        if (rate != null && rate > XNetGases.maxInfuseRateNormal.get()) {
+        if (rate != null && rate > InfuseChannelModule.maxInfuseRateNormal.get()) {
             object.add("advancedneeded", new JsonPrimitive(true));
         }
         if (speed == 1) {
@@ -196,67 +186,56 @@ public class InfuseConnectorSettings extends AbstractConnectorSettings {
     @Override
     public void readFromJson(JsonObject object) {
         super.readFromJsonInternal(object);
-        infuseMode = getEnumSafe(object, "infusemode", InfuseUtils::getConnectorModeFrom);
-        priority = getIntegerSafe(object, "priority");
-        rate = getIntegerSafe(object, "rate");
-        minmax = getIntegerSafe(object, "minmax");
-        speed = getIntegerNotNull(object, "speed");
-        if (object.has("filter")) {
-            filter = JSonTools.jsonToItemStack(object.get("filter").getAsJsonObject());
-        } else {
-            filter = ItemStack.EMPTY;
-        }
+        infuseMode = getEnumSafe(object, TAG_MODE, InfuseUtils::getConnectorModeFrom);
+        priority = getIntegerSafe(object, TAG_PRIORITY);
+        rate = getIntegerSafe(object, TAG_RATE);
+        minmax = getIntegerSafe(object, TAG_MINMAX);
+        speed = getIntegerNotNull(object, TAG_SPEED);
+        if (object.has(TAG_FILTER)) {
+            filter = JSonTools.jsonToItemStack(object.get(TAG_FILTER).getAsJsonObject());
+        } else filter = ItemStack.EMPTY;
     }
 
     @Override
     public void readFromNBT(CompoundNBT tag) {
         super.readFromNBT(tag);
-        infuseMode = InfuseMode.values()[tag.getByte("infuseMode")];
-        if (tag.contains("priority")) {
-            priority = tag.getInt("priority");
-        } else {
-            priority = null;
-        }
-        if (tag.contains("rate")) {
-            rate = tag.getInt("rate");
-        } else {
-            rate = null;
-        }
-        if (tag.contains("minmax")) {
-            minmax = tag.getInt("minmax");
-        } else {
-            minmax = null;
-        }
-        speed = tag.getInt("speed");
+        infuseMode = InfuseMode.values()[tag.getByte(TAG_MODE)];
+
+        if (tag.contains(TAG_PRIORITY)) {
+            priority = tag.getInt(TAG_PRIORITY);
+        } else priority = null;
+
+        if (tag.contains(TAG_RATE)) {
+            rate = tag.getInt(TAG_RATE);
+        } else rate = null;
+
+        if (tag.contains(TAG_MINMAX)) {
+            minmax = tag.getInt(TAG_MINMAX);
+        } else minmax = null;
+
+        speed = tag.getInt(TAG_SPEED);
         if (speed == 0) {
             speed = 2;
         }
-        if (tag.contains("filter")) {
-            CompoundNBT itemTag = tag.getCompound("filter");
+
+        if (tag.contains(TAG_FILTER)) {
+            CompoundNBT itemTag = tag.getCompound(TAG_FILTER);
             filter = ItemStack.of(itemTag);
-        } else {
-            filter = ItemStack.EMPTY;
-        }
+        } else filter = ItemStack.EMPTY;
     }
 
     @Override
     public void writeToNBT(CompoundNBT tag) {
         super.writeToNBT(tag);
-        tag.putByte("infuseMode", (byte) infuseMode.ordinal());
-        if (priority != null) {
-            tag.putInt("priority", priority);
-        }
-        if (rate != null) {
-            tag.putInt("rate", rate);
-        }
-        if (minmax != null) {
-            tag.putInt("minmax", minmax);
-        }
-        tag.putInt("speed", speed);
+        tag.putByte(TAG_MODE, (byte) infuseMode.ordinal());
+        if (priority != null) tag.putInt(TAG_PRIORITY, priority);
+        if (rate != null) tag.putInt(TAG_RATE, rate);
+        if (minmax != null) tag.putInt(TAG_MINMAX, minmax);
+        tag.putInt(TAG_SPEED, speed);
         if (!filter.isEmpty()) {
             CompoundNBT itemTag = new CompoundNBT();
             filter.save(itemTag);
-            tag.put("filter", itemTag);
+            tag.put(TAG_FILTER, itemTag);
         }
     }
 }

@@ -1,51 +1,46 @@
-package terrails.xnetgases.slurry;
+package terrails.xnetgases.module.infuse;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.mojang.datafixers.util.Pair;
 import mcjty.lib.varia.WorldTools;
-import mcjty.rftoolsbase.api.xnet.channels.IChannelSettings;
 import mcjty.rftoolsbase.api.xnet.channels.IConnectorSettings;
 import mcjty.rftoolsbase.api.xnet.channels.IControllerContext;
 import mcjty.rftoolsbase.api.xnet.gui.IEditorGui;
 import mcjty.rftoolsbase.api.xnet.gui.IndicatorIcon;
-import mcjty.rftoolsbase.api.xnet.helper.DefaultChannelSettings;
 import mcjty.rftoolsbase.api.xnet.keys.SidedConsumer;
-import mcjty.xnet.XNet;
 import mcjty.xnet.setup.Config;
 import mekanism.api.Action;
-import mekanism.api.chemical.slurry.ISlurryHandler;
-import mekanism.api.chemical.slurry.Slurry;
-import mekanism.api.chemical.slurry.SlurryStack;
+import mekanism.api.chemical.infuse.IInfusionHandler;
+import mekanism.api.chemical.infuse.InfuseType;
+import mekanism.api.chemical.infuse.InfusionStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import terrails.xnetgases.helper.ChemicalChannelSettings;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
 
-public class SlurryChannelSettings extends DefaultChannelSettings implements IChannelSettings {
+import static terrails.xnetgases.Constants.*;
 
-    public static final ResourceLocation iconGuiElements = new ResourceLocation(XNet.MODID, "textures/gui/guielements.png");
-
-    public static final String TAG_MODE = "mode";
+public class InfuseChannelSettings extends ChemicalChannelSettings {
 
     public enum ChannelMode {
         PRIORITY,
         DISTRIBUTE
     }
 
-    private SlurryChannelSettings.ChannelMode channelMode = SlurryChannelSettings.ChannelMode.DISTRIBUTE;
+    private ChannelMode channelMode = ChannelMode.DISTRIBUTE;
     private int delay;
     private int roundRobinOffset;
 
-    private List<Pair<SidedConsumer, SlurryConnectorSettings>> slurryExtractors;
-    private List<Pair<SidedConsumer, SlurryConnectorSettings>> slurryConsumers;
+    private List<Pair<SidedConsumer, InfuseConnectorSettings>> infuseExtractors;
+    private List<Pair<SidedConsumer, InfuseConnectorSettings>> infuseConsumers;
 
-    public SlurryChannelSettings() {
+    public InfuseChannelSettings() {
         this.delay = 0;
         this.roundRobinOffset = 0;
     }
@@ -59,12 +54,12 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
 
     @Override
     public void readFromJson(JsonObject data) {
-        channelMode = SlurryUtils.getChannelModeFrom(data.get("mode").getAsString());
+        channelMode = InfuseUtils.getChannelModeFrom(data.get("mode").getAsString());
     }
 
     @Override
     public void readFromNBT(CompoundNBT nbt) {
-        channelMode = SlurryChannelSettings.ChannelMode.values()[nbt.getByte("mode")];
+        channelMode = InfuseChannelSettings.ChannelMode.values()[nbt.getByte("mode")];
         this.delay = nbt.getInt("delay");
         this.roundRobinOffset = nbt.getInt("offset");
     }
@@ -89,9 +84,9 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
 
             World world = context.getControllerWorld();
             extractorsLoop:
-            for (Pair<SidedConsumer, SlurryConnectorSettings> entry : slurryExtractors) {
+            for (Pair<SidedConsumer, InfuseConnectorSettings> entry : infuseExtractors) {
                 SidedConsumer consumer = entry.getFirst();
-                SlurryConnectorSettings settings = entry.getSecond();
+                InfuseConnectorSettings settings = entry.getSecond();
                 if (d % settings.getSpeed() != 0) {
                     continue;
                 }
@@ -104,9 +99,9 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
                     }
 
                     TileEntity te = world.getBlockEntity(pos);
-                    Optional<ISlurryHandler> optional = SlurryUtils.getSlurryHandlerFor(te, settings.getFacing());
+                    Optional<IInfusionHandler> optional = InfuseUtils.getInfuseHandlerFor(te, settings.getFacing());
                     if (optional.isPresent()) {
-                        ISlurryHandler handler = optional.get();
+                        IInfusionHandler handler = optional.get();
 
                         if (checkRedstone(world, settings, extractorPos)) {
                             return;
@@ -115,13 +110,13 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
                             return;
                         }
 
-                        SlurryStack extractMatcher = settings.getMatcher();
+                        InfusionStack extractMatcher = settings.getMatcher();
 
                         long toExtract = settings.getRate();
 
                         Integer count = settings.getMinmax();
                         if (count != null) {
-                            long amount = SlurryUtils.getSlurryCount(handler, settings.getFacing(), extractMatcher);
+                            long amount = InfuseUtils.getInfuseCount(handler, settings.getFacing(), extractMatcher);
                             long canExtract = amount - count;
                             if (canExtract <= 0) {
                                 continue;
@@ -129,12 +124,12 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
                             toExtract = Math.min(toExtract, canExtract);
                         }
 
-                        if (channelMode == ChannelMode.PRIORITY) {
+                        if (channelMode == InfuseChannelSettings.ChannelMode.PRIORITY) {
 
-                            // Skip current extractor if there is one with the same slurry but higher priority.
-                            if (slurryExtractors.stream().anyMatch(_entry -> {
+                            // Skip current extractor if there is one with the same infuse but has higher priority.
+                            if (infuseExtractors.stream().anyMatch(_entry -> {
                                 SidedConsumer _consumer = _entry.getFirst();
-                                SlurryConnectorSettings _settings = _entry.getSecond();
+                                InfuseConnectorSettings _settings = _entry.getSecond();
 
                                 if (_settings.getPriority() <= settings.getPriority()) {
                                     return false;
@@ -150,21 +145,21 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
                                     return false;
                                 }
 
-                                Optional<ISlurryHandler> _optional = SlurryUtils.getSlurryHandlerFor(world.getBlockEntity(_pos), _settings.getFacing());
+                                Optional<IInfusionHandler> _optional = InfuseUtils.getInfuseHandlerFor(world.getBlockEntity(_pos), _settings.getFacing());
                                 if (_optional.isPresent()) {
-                                    ISlurryHandler _handler = _optional.get();
+                                    IInfusionHandler _handler = _optional.get();
 
-                                    List<Slurry> handlerSlurries = SlurryUtils.getSlurryInTank(handler, consumer.getSide());
-                                    List<Slurry> _handlerSlurries = SlurryUtils.getSlurryInTank(_handler, _consumer.getSide());
+                                    List<InfuseType> handlerInfuses = InfuseUtils.getInfuseInTank(handler, consumer.getSide());
+                                    List<InfuseType> _handlerInfuses = InfuseUtils.getInfuseInTank(_handler, _consumer.getSide());
 
-                                    if (Collections.disjoint(handlerSlurries, _handlerSlurries)) {
+                                    if (Collections.disjoint(handlerInfuses, _handlerInfuses)) {
                                         return false;
                                     }
 
-                                    SlurryStack matcher = settings.getMatcher();
-                                    SlurryStack _matcher = _settings.getMatcher();
+                                    InfusionStack matcher = settings.getMatcher();
+                                    InfusionStack _matcher = _settings.getMatcher();
 
-                                    return (matcher == null || handlerSlurries.contains(matcher.getType())) && (_matcher == null || _handlerSlurries.contains(_matcher.getType()));
+                                    return (matcher == null || handlerInfuses.contains(matcher.getType())) && (_matcher == null || _handlerInfuses.contains(_matcher.getType()));
                                 }
                                 return false;
                             })) {
@@ -172,25 +167,25 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
                             }
                         }
 
-                        List<Pair<SidedConsumer, SlurryConnectorSettings>> inserted = new ArrayList<>();
+                        List<Pair<SidedConsumer, InfuseConnectorSettings>> inserted = new ArrayList<>();
                         long remaining;
                         do {
-                            SlurryStack stack = SlurryUtils.extractSlurry(handler, toExtract, settings.getFacing(), Action.SIMULATE);
+                            InfusionStack stack = InfuseUtils.extractInfuse(handler, toExtract, settings.getFacing(), Action.SIMULATE);
                             if (stack.isEmpty() || (extractMatcher != null && !extractMatcher.equals(stack)))
                                 continue extractorsLoop;
                             toExtract = stack.getAmount();
                             inserted.clear();
-                            remaining = insertSlurrySimulate(inserted, context, stack);
+                            remaining = insertInfuseSimulate(inserted, context, stack);
                             toExtract -= remaining;
                             if (inserted.isEmpty() || toExtract <= 0) continue extractorsLoop;
                         } while (remaining > 0);
 
                         if (context.checkAndConsumeRF(Config.controllerOperationRFT.get())) {
-                            SlurryStack stack = SlurryUtils.extractSlurry(handler, toExtract, settings.getFacing(), Action.EXECUTE);
+                            InfusionStack stack = InfuseUtils.extractInfuse(handler, toExtract, settings.getFacing(), Action.EXECUTE);
                             if (stack.isEmpty()) {
-                                throw new NullPointerException(handler.getClass().getName() + " misbehaved! handler.extractSlurry(" + toExtract + ", Action.SIMULATE) returned null, even though handler.extractSlurry(" + toExtract + ", Action.EXECUTE) did not");
+                                throw new NullPointerException(handler.getClass().getName() + " misbehaved! handler.extractInfuse(" + toExtract + ", Action.SIMULATE) returned null, even though handler.extractInfuse(" + toExtract + ", Action.EXECUTE) did not");
                             }
-                            insertSlurryReal(context, inserted, stack);
+                            insertInfuseReal(context, inserted, stack);
                         }
                     }
                 }
@@ -200,18 +195,18 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
 
     @Override
     public void cleanCache() {
-        this.slurryExtractors = null;
-        this.slurryConsumers = null;
+        this.infuseExtractors = null;
+        this.infuseConsumers = null;
     }
 
-    private long insertSlurrySimulate(@Nonnull List<Pair<SidedConsumer, SlurryConnectorSettings>> inserted, @Nonnull IControllerContext context, @Nonnull SlurryStack stack) {
+    private long insertInfuseSimulate(@Nonnull List<Pair<SidedConsumer, InfuseConnectorSettings>> inserted, @Nonnull IControllerContext context, @Nonnull InfusionStack stack) {
         World world = context.getControllerWorld();
         long amount = stack.getAmount();
-        for (int j = 0; j < slurryConsumers.size(); j++) {
-            int i = (j + roundRobinOffset) % slurryConsumers.size();
-            Pair<SidedConsumer, SlurryConnectorSettings> entry = slurryConsumers.get(i);
+        for (int j = 0; j < infuseConsumers.size(); j++) {
+            int i = (j + roundRobinOffset) % infuseConsumers.size();
+            Pair<SidedConsumer, InfuseConnectorSettings> entry = infuseConsumers.get(i);
             SidedConsumer consumer = entry.getFirst();
-            SlurryConnectorSettings settings = entry.getSecond();
+            InfuseConnectorSettings settings = entry.getSecond();
 
             if (settings.getMatcher() == null || settings.getMatcher().equals(stack)) {
                 BlockPos consumerPos = context.findConsumerPosition(consumer.getConsumerId());
@@ -229,15 +224,15 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
                     BlockPos pos = consumerPos.relative(consumer.getSide());
                     TileEntity te = world.getBlockEntity(pos);
 
-                    Optional<ISlurryHandler> optional = SlurryUtils.getSlurryHandlerFor(te, settings.getFacing());
+                    Optional<IInfusionHandler> optional = InfuseUtils.getInfuseHandlerFor(te, settings.getFacing());
                     if (optional.isPresent()) {
-                        ISlurryHandler handler = optional.get();
+                        IInfusionHandler handler = optional.get();
 
                         long toInsert = Math.min(settings.getRate(), amount);
 
                         Integer count = settings.getMinmax();
                         if (count != null) {
-                            long a = SlurryUtils.getSlurryCount(handler, settings.getFacing(), settings.getMatcher());
+                            long a = InfuseUtils.getInfuseCount(handler, settings.getFacing(), settings.getMatcher());
                             long canInsert = count - a;
                             if (canInsert <= 0) {
                                 continue;
@@ -245,12 +240,12 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
                             toInsert = Math.min(toInsert, canInsert);
                         }
 
-                        if (channelMode == ChannelMode.PRIORITY) {
+                        if (channelMode == InfuseChannelSettings.ChannelMode.PRIORITY) {
 
-                            // Skip current consumer if there is one that accepts the same gas but has higher priority
-                            if (slurryConsumers.stream().anyMatch(_entry -> {
+                            // Skip current consumer if there is one that accepts the same infuse but has higher priority.
+                            if (infuseConsumers.stream().anyMatch(_entry -> {
                                 SidedConsumer _consumer = _entry.getFirst();
-                                SlurryConnectorSettings _settings = _entry.getSecond();
+                                InfuseConnectorSettings _settings = _entry.getSecond();
 
                                 if (_settings.getPriority() <= settings.getPriority()) {
                                     return false;
@@ -266,21 +261,21 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
                                     return false;
                                 }
 
-                                Optional<ISlurryHandler> _optional = SlurryUtils.getSlurryHandlerFor(world.getBlockEntity(_pos), _settings.getFacing());
+                                Optional<IInfusionHandler> _optional = InfuseUtils.getInfuseHandlerFor(world.getBlockEntity(_pos), _settings.getFacing());
                                 if (_optional.isPresent()) {
-                                    ISlurryHandler _handler = _optional.get();
+                                    IInfusionHandler _handler = _optional.get();
 
-                                    List<Slurry> handlerSlurries = SlurryUtils.getSlurryInTank(handler, consumer.getSide());
-                                    List<Slurry> _handlerSlurries = SlurryUtils.getSlurryInTank(_handler, _consumer.getSide());
+                                    List<InfuseType> handlerInfuses = InfuseUtils.getInfuseInTank(handler, consumer.getSide());
+                                    List<InfuseType> _handlerInfuses = InfuseUtils.getInfuseInTank(_handler, _consumer.getSide());
 
-                                    if (Collections.disjoint(handlerSlurries, _handlerSlurries)) {
+                                    if (Collections.disjoint(handlerInfuses, _handlerInfuses)) {
                                         return false;
                                     }
 
-                                    SlurryStack matcher = settings.getMatcher();
-                                    SlurryStack _matcher = _settings.getMatcher();
+                                    InfusionStack matcher = settings.getMatcher();
+                                    InfusionStack _matcher = _settings.getMatcher();
 
-                                    return (matcher == null || handlerSlurries.contains(matcher.getType())) && (_matcher == null || _handlerSlurries.contains(_matcher.getType()));
+                                    return (matcher == null || handlerInfuses.contains(matcher.getType())) && (_matcher == null || _handlerInfuses.contains(_matcher.getType()));
                                 }
                                 return false;
                             })) {
@@ -288,10 +283,10 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
                             }
                         }
 
-                        SlurryStack copy = stack.copy();
+                        InfusionStack copy = stack.copy();
                         copy.setAmount(toInsert);
 
-                        SlurryStack remaining = SlurryUtils.insertSlurry(handler, copy, settings.getFacing(), Action.SIMULATE);
+                        InfusionStack remaining = InfuseUtils.insertInfuse(handler, copy, settings.getFacing(), Action.SIMULATE);
                         if (remaining.isEmpty() || (!remaining.isEmpty() && copy.getAmount() != remaining.getAmount())) {
                             inserted.add(entry);
                             amount -= (copy.getAmount() - remaining.getAmount());
@@ -306,26 +301,26 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
         return amount;
     }
 
-    private void insertSlurryReal(@Nonnull IControllerContext context, @Nonnull List<Pair<SidedConsumer, SlurryConnectorSettings>> inserted, @Nonnull SlurryStack stack) {
+    private void insertInfuseReal(@Nonnull IControllerContext context, @Nonnull List<Pair<SidedConsumer, InfuseConnectorSettings>> inserted, @Nonnull InfusionStack stack) {
         long amount = stack.getAmount();
-        for (Pair<SidedConsumer, SlurryConnectorSettings> pair : inserted) {
+        for (Pair<SidedConsumer, InfuseConnectorSettings> pair : inserted) {
 
-            SlurryConnectorSettings settings = pair.getSecond();
+            InfuseConnectorSettings settings = pair.getSecond();
             BlockPos consumerPosition = context.findConsumerPosition(pair.getFirst().getConsumerId());
 
             assert consumerPosition != null;
             BlockPos pos = consumerPosition.relative(pair.getFirst().getSide());
             TileEntity te = context.getControllerWorld().getBlockEntity(pos);
 
-            Optional<ISlurryHandler> optional = SlurryUtils.getSlurryHandlerFor(te, settings.getFacing());
+            Optional<IInfusionHandler> optional = InfuseUtils.getInfuseHandlerFor(te, settings.getFacing());
             if (optional.isPresent()) {
-                ISlurryHandler handler = optional.get();
+                IInfusionHandler handler = optional.get();
 
                 long toInsert = Math.min(settings.getRate(), amount);
 
                 Integer count = settings.getMinmax();
                 if (count != null) {
-                    long a = SlurryUtils.getSlurryCount(handler, settings.getFacing(), settings.getMatcher());
+                    long a = InfuseUtils.getInfuseCount(handler, settings.getFacing(), settings.getMatcher());
                     long caninsert = count - a;
                     if (caninsert <= 0) {
                         continue;
@@ -333,12 +328,12 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
                     toInsert = Math.min(toInsert, caninsert);
                 }
 
-                SlurryStack copy = stack.copy();
+                InfusionStack copy = stack.copy();
                 copy.setAmount(toInsert);
 
-                SlurryStack remaining = SlurryUtils.insertSlurry(handler, copy, settings.getFacing(), Action.EXECUTE);
+                InfusionStack remaining = InfuseUtils.insertInfuse(handler, copy, settings.getFacing(), Action.EXECUTE);
                 if (remaining.isEmpty() || (!remaining.isEmpty() && copy.getAmount() != remaining.getAmount())) {
-                    roundRobinOffset = (roundRobinOffset + 1) % slurryConsumers.size();
+                    roundRobinOffset = (roundRobinOffset + 1) % infuseConsumers.size();
                     amount -= (copy.getAmount() - remaining.getAmount());
                     if (amount <= 0) {
                         return;
@@ -349,9 +344,9 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
     }
 
     private void updateCache(int channel, IControllerContext context) {
-        if (this.slurryExtractors == null) {
-            this.slurryExtractors = new ArrayList<>();
-            this.slurryConsumers = new ArrayList<>();
+        if (this.infuseExtractors == null) {
+            this.infuseExtractors = new ArrayList<>();
+            this.infuseConsumers = new ArrayList<>();
 
             Map<SidedConsumer, IConnectorSettings> connectors = context.getConnectors(channel);
             Iterator<Map.Entry<SidedConsumer, IConnectorSettings>> iterator = connectors.entrySet().iterator();
@@ -359,11 +354,11 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
             while (iterator.hasNext()) {
                 Map.Entry<SidedConsumer, IConnectorSettings> entry = iterator.next();
                 SidedConsumer consumer = entry.getKey();
-                SlurryConnectorSettings settings = (SlurryConnectorSettings) entry.getValue();
-                if (settings.getSlurryMode() == SlurryConnectorSettings.SlurryMode.EXT) {
-                    this.slurryExtractors.add(Pair.of(consumer, settings));
+                InfuseConnectorSettings settings = (InfuseConnectorSettings) entry.getValue();
+                if (settings.getInfuseMode() == InfuseConnectorSettings.InfuseMode.EXT) {
+                    this.infuseExtractors.add(Pair.of(consumer, settings));
                 } else {
-                    this.slurryConsumers.add(Pair.of(consumer, settings));
+                    this.infuseConsumers.add(Pair.of(entry.getKey(), settings));
                 }
             }
 
@@ -373,45 +368,30 @@ public class SlurryChannelSettings extends DefaultChannelSettings implements ICh
             while (iterator.hasNext()) {
                 Map.Entry<SidedConsumer, IConnectorSettings> entry = iterator.next();
                 SidedConsumer consumer = entry.getKey();
-                SlurryConnectorSettings settings = (SlurryConnectorSettings) entry.getValue();
-                if (settings.getSlurryMode() == SlurryConnectorSettings.SlurryMode.INS) {
-                    this.slurryConsumers.add(Pair.of(consumer, settings));
+                InfuseConnectorSettings settings = (InfuseConnectorSettings) entry.getValue();
+                if (settings.getInfuseMode() == InfuseConnectorSettings.InfuseMode.INS) {
+                    this.infuseConsumers.add(Pair.of(consumer, settings));
                 }
             }
 
-            this.slurryConsumers.sort((o1, o2) -> (o2.getSecond()).getPriority().compareTo((o1.getSecond()).getPriority()));
+            this.infuseConsumers.sort((o1, o2) -> (o2.getSecond()).getPriority().compareTo((o1.getSecond()).getPriority()));
         }
-    }
-
-    @Override
-    public boolean isEnabled(String tag) {
-        return true;
     }
 
     @Nullable
     @Override
     public IndicatorIcon getIndicatorIcon() {
-        return new IndicatorIcon(iconGuiElements, 0, 90, 11, 10);
-    }
-
-    @Nullable
-    @Override
-    public String getIndicator() {
-        return null;
+        return new IndicatorIcon(XNET_GUI_ELEMENTS, 0, 90, 11, 10);
     }
 
     @Override
     public void createGui(IEditorGui gui) {
-        gui.nl().choices(TAG_MODE, "Slurry distribution mode", this.channelMode, SlurryChannelSettings.ChannelMode.values());
+        gui.nl().choices(TAG_MODE, "Infuse distribution mode", this.channelMode, InfuseChannelSettings.ChannelMode.values());
     }
 
     @Override
     public void update(Map<String, Object> data) {
-        this.channelMode = SlurryChannelSettings.ChannelMode.valueOf(((String) data.get(TAG_MODE)).toUpperCase());
+        this.channelMode = InfuseChannelSettings.ChannelMode.valueOf(((String) data.get(TAG_MODE)).toUpperCase());
     }
 
-    @Override
-    public int getColors() {
-        return 0;
-    }
 }
