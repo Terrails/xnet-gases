@@ -182,9 +182,7 @@ public class XGLogicConnectorSettings extends AbstractConnectorSettings {
     @Override
     public void readFromJson(JsonObject object) {
         super.readFromJsonInternal(object);
-        if (object.has("logicmode")) {
-            logicMode = getEnumSafe(object, "logicmode", LogicUtils::getLogicModeFrom);
-        } else logicMode = getEnumSafe(object, TAG_MODE, LogicUtils::getLogicModeFrom);
+        logicMode = getEnumSafe(object, TAG_MODE, LogicUtils::getLogicModeFrom);
         speed = getIntegerNotNull(object, TAG_SPEED);
         JsonArray sensorArray = object.get(TAG_SENSORS).getAsJsonArray();
         sensors.clear();
@@ -194,23 +192,6 @@ public class XGLogicConnectorSettings extends AbstractConnectorSettings {
             sensor.readFromJson(o);
             sensors.add(sensor);
         }
-    }
-
-    @Override
-    public void readFromNBT(CompoundNBT tag) {
-        super.readFromNBT(tag);
-        if (tag.contains("logicMode")) {
-            logicMode = LogicMode.values()[tag.getByte("logicMode")];
-        } else logicMode = LogicMode.values()[tag.getByte(TAG_MODE)];
-        speed = tag.getInt(TAG_SPEED);
-        if (speed == 0) {
-            speed = 2;
-        }
-        colors = tag.getInt(TAG_COLORS);
-        for (XGSensor sensor : sensors) {
-            sensor.readFromNBT(tag);
-        }
-        redstoneOut = tag.getInt(TAG_REDSTONE_OUT);
     }
 
     @Override
@@ -225,5 +206,20 @@ public class XGLogicConnectorSettings extends AbstractConnectorSettings {
         if (redstoneOut != null) {
             tag.putInt(TAG_REDSTONE_OUT, redstoneOut);
         }
+    }
+
+    @Override
+    public void readFromNBT(CompoundNBT tag) {
+        super.readFromNBT(tag);
+        logicMode = LogicMode.values()[tag.getByte(TAG_MODE)];
+        speed = tag.getInt(TAG_SPEED);
+        if (speed == 0) {
+            speed = 2;
+        }
+        colors = tag.getInt(TAG_COLORS);
+        for (XGSensor sensor : sensors) {
+            sensor.readFromNBT(tag);
+        }
+        redstoneOut = tag.getInt(TAG_REDSTONE_OUT);
     }
 }
