@@ -3,7 +3,7 @@ package terrails.xnetgases.module.gas;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.mojang.datafixers.util.Pair;
-import mcjty.lib.varia.WorldTools;
+import mcjty.lib.varia.LevelTools;
 import mcjty.rftoolsbase.api.xnet.channels.IConnectorSettings;
 import mcjty.rftoolsbase.api.xnet.channels.IControllerContext;
 import mcjty.rftoolsbase.api.xnet.gui.IEditorGui;
@@ -94,7 +94,7 @@ public class GasChannelSettings extends ChemicalChannelSettings {
                 BlockPos extractorPos = context.findConsumerPosition(consumer.getConsumerId());
                 if (extractorPos != null) {
                     BlockPos pos = extractorPos.relative(consumer.getSide());
-                    if (!WorldTools.isLoaded(world, pos)) {
+                    if (!LevelTools.isLoaded(world, pos)) {
                         continue;
                     }
 
@@ -141,7 +141,7 @@ public class GasChannelSettings extends ChemicalChannelSettings {
                                 }
 
                                 BlockPos _pos = _extractorPos.relative(_consumer.getSide());
-                                if (!WorldTools.isLoaded(world, _pos)) {
+                                if (!LevelTools.isLoaded(world, _pos)) {
                                     return false;
                                 }
 
@@ -211,7 +211,7 @@ public class GasChannelSettings extends ChemicalChannelSettings {
             if (settings.getMatcher() == null || settings.getMatcher().equals(stack)) {
                 BlockPos consumerPos = context.findConsumerPosition(consumer.getConsumerId());
                 if (consumerPos != null) {
-                    if (!WorldTools.isLoaded(world, consumerPos)) {
+                    if (!LevelTools.isLoaded(world, consumerPos)) {
                         continue;
                     }
                     if (checkRedstone(world, settings, consumerPos)) {
@@ -257,7 +257,7 @@ public class GasChannelSettings extends ChemicalChannelSettings {
                                 }
 
                                 BlockPos _pos = _extractorPos.relative(_consumer.getSide());
-                                if (!WorldTools.isLoaded(world, _pos)) {
+                                if (!LevelTools.isLoaded(world, _pos)) {
                                     return false;
                                 }
 

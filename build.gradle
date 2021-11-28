@@ -13,9 +13,9 @@ apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'org.parchmentmc.librarian.forgegradle'
 
 def minecraft_version = "1.16.5"
-def forge_version = "36.2.2"
+def forge_version = "36.2.19"
 
-version = "2.3.7"
+version = "2.3.8"
 group = 'terrails.xnetgases'
 archivesBaseName = "XNetGases-${minecraft_version}"
 
@@ -23,7 +23,7 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(8)
 
 println('Java: ' + System.getProperty('java.version') + ' JVM: ' + System.getProperty('java.vm.version') + '(' + System.getProperty('java.vendor') + ') Arch: ' + System.getProperty('os.arch'))
 minecraft {
-    mappings channel: 'parchment', version: '2021.08.08-1.16.5'
+    mappings channel: 'parchment', version: '2021.10.17-1.16.5'
 
     runs {
         client {
@@ -93,12 +93,22 @@ dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
     // XNet
-    implementation fg.deobf("curse.maven:xnet-260912:3310471") // 1.16-3.0.13
-    implementation fg.deobf("curse.maven:rftools-base-326041:3380271") // 1.16-2.0.11
-    implementation fg.deobf("curse.maven:mcjtylib-233105:3402861") // 1.16-5.0.22
+    implementation fg.deobf("curse.maven:xnet-260912:3539380") // 1.16-3.0.14
+    implementation fg.deobf("curse.maven:rftools-base-326041:3539364") // 1.16-2.1.0
+    implementation fg.deobf("curse.maven:mcjtylib-233105:3539363") // 1.16-5.1.0
 
     // Mekanism
-    implementation fg.deobf("curse.maven:mekanism-268560:3206392") // 1.16.5-10.0.21.448
+    implementation fg.deobf("curse.maven:mekanism-268560:3516428") // 1.16.5-10.0.24.453
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    archiveClassifier.set('sources')
+    from sourceSets.main.allSource
+    from "LICENSE"
+}
+
+artifacts {
+    archives sourcesJar
 }
 
 jar.manifest.attributes([
