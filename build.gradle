@@ -13,7 +13,7 @@ apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'org.parchmentmc.librarian.forgegradle'
 
 def minecraft_version = "1.16.5"
-def forge_version = "36.2.19"
+def forge_version = "36.2.22"
 
 version = "2.3.8"
 group = 'terrails.xnetgases'
@@ -93,12 +93,12 @@ dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
     // XNet
-    implementation fg.deobf("curse.maven:xnet-260912:3539380") // 1.16-3.0.14
-    implementation fg.deobf("curse.maven:rftools-base-326041:3539364") // 1.16-2.1.0
-    implementation fg.deobf("curse.maven:mcjtylib-233105:3539363") // 1.16-5.1.0
+    implementation fg.deobf("curse.maven:xnet-260912:3557001") // 1.16-3.0.15
+    implementation fg.deobf("curse.maven:rftools-base-326041:3556984") // 1.16-2.1.1
+    implementation fg.deobf("curse.maven:mcjtylib-233105:3556983") // 1.16-5.1.2
 
     // Mekanism
-    implementation fg.deobf("curse.maven:mekanism-268560:3516428") // 1.16.5-10.0.24.453
+    implementation fg.deobf("curse.maven:mekanism-268560:3577006") // 1.16.5-10.1.0.455
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
