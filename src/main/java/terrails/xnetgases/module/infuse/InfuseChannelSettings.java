@@ -171,7 +171,7 @@ public class InfuseChannelSettings extends ChemicalChannelSettings {
                         long remaining;
                         do {
                             InfusionStack stack = InfuseUtils.extractInfuse(handler, toExtract, settings.getFacing(), Action.SIMULATE);
-                            if (stack.isEmpty() || (extractMatcher != null && !extractMatcher.equals(stack)))
+                            if (stack.isEmpty() || (extractMatcher != null && !extractMatcher.isTypeEqual(stack)))
                                 continue extractorsLoop;
                             toExtract = stack.getAmount();
                             inserted.clear();
@@ -208,7 +208,7 @@ public class InfuseChannelSettings extends ChemicalChannelSettings {
             SidedConsumer consumer = entry.getFirst();
             InfuseConnectorSettings settings = entry.getSecond();
 
-            if (settings.getMatcher() == null || settings.getMatcher().equals(stack)) {
+            if (settings.getMatcher() == null || settings.getMatcher().isTypeEqual(stack)) {
                 BlockPos consumerPos = context.findConsumerPosition(consumer.getConsumerId());
                 if (consumerPos != null) {
                     if (!LevelTools.isLoaded(world, consumerPos)) {

@@ -113,7 +113,7 @@ public class PigmentUtils {
     }
 
     public static long getPigmentCount(@Nonnull IPigmentHandler handler, @Nullable Direction direction, @Nullable PigmentStack filter) {
-        return getPigmentCount(handler, direction, (stack) -> filter == null || stack.equals(filter));
+        return getPigmentCount(handler, direction, (stack) -> filter == null || stack.isTypeEqual(filter));
     }
 
     public static long getPigmentCount(@Nonnull IPigmentHandler handler, @Nullable Direction direction) {

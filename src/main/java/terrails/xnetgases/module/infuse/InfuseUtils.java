@@ -113,7 +113,7 @@ public class InfuseUtils {
     }
 
     public static long getInfuseCount(@Nonnull IInfusionHandler handler, @Nullable Direction direction, @Nullable InfusionStack filter) {
-        return getInfuseCount(handler, direction, (stack) -> filter == null || stack.equals(filter));
+        return getInfuseCount(handler, direction, (stack) -> filter == null || stack.isTypeEqual(filter));
     }
 
     public static long getInfuseCount(@Nonnull IInfusionHandler handler, @Nullable Direction direction) {
