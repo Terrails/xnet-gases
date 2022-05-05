@@ -53,7 +53,7 @@ public class XNetGases {
     private void setup(final FMLCommonSetupEvent event) {
         loadConfig(FMLPaths.CONFIGDIR.get().resolve("xnetgases.toml"));
 
-        Arrays.stream(MODULES).forEach(module -> XNet.xNetApi.registerChannelType(module));
+        Arrays.stream(MODULES).forEach(XNet.xNetApi::registerChannelType);
 
         XNet.xNetApi.registerConnectable((reader, connectorPos, blockPos, tile, direction) -> {
             if (GasUtils.getGasHandlerFor(tile, direction).isPresent()
