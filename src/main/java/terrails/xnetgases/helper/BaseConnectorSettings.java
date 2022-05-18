@@ -4,15 +4,14 @@ import com.google.gson.JsonObject;
 import mcjty.rftoolsbase.api.xnet.gui.IEditorGui;
 import mcjty.rftoolsbase.api.xnet.gui.IndicatorIcon;
 import mcjty.rftoolsbase.api.xnet.helper.AbstractConnectorSettings;
-import mekanism.api.chemical.ChemicalStack;
-import net.minecraft.util.Direction;
+import net.minecraft.core.Direction;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public abstract class ChemicalConnectorSettings<Z extends ChemicalStack<?>> extends AbstractConnectorSettings {
+public abstract class BaseConnectorSettings<Z> extends AbstractConnectorSettings {
 
-    public ChemicalConnectorSettings(@Nonnull Direction side) {
+    public BaseConnectorSettings(@Nonnull Direction side) {
         super(side);
     }
 

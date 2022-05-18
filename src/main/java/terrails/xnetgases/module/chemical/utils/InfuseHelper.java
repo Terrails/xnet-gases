@@ -1,47 +1,24 @@
-package terrails.xnetgases.module.infuse;
+package terrails.xnetgases.module.chemical.utils;
 
 import mekanism.api.Action;
 import mekanism.api.chemical.infuse.IInfusionHandler;
 import mekanism.api.chemical.infuse.InfuseType;
 import mekanism.api.chemical.infuse.InfusionStack;
 import mekanism.common.capabilities.Capabilities;
-import net.minecraft.util.Direction;
+import net.minecraft.core.Direction;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Predicate;
 
-public class InfuseUtils {
-
-    private static Map<String, InfuseConnectorSettings.InfuseMode> connectorModeCache;
-    private static Map<String, InfuseChannelSettings.ChannelMode> channelModeCache;
+public class InfuseHelper {
 
     @Nonnull
-    public static InfuseConnectorSettings.InfuseMode getConnectorModeFrom(String s) {
-        if (connectorModeCache == null) {
-            connectorModeCache = new HashMap<>();
-            for (InfuseConnectorSettings.InfuseMode mode : InfuseConnectorSettings.InfuseMode.values()) {
-                connectorModeCache.put(mode.name(), mode);
-            }
-        }
-        return connectorModeCache.get(s);
-    }
-
-    @Nonnull
-    public static InfuseChannelSettings.ChannelMode getChannelModeFrom(String s) {
-        if (channelModeCache == null) {
-            channelModeCache = new HashMap<>();
-            for (InfuseChannelSettings.ChannelMode mode : InfuseChannelSettings.ChannelMode.values()) {
-                channelModeCache.put(mode.name(), mode);
-            }
-        }
-        return channelModeCache.get(s);
-    }
-
-    @Nonnull
-    public static Optional<IInfusionHandler> getInfuseHandlerFor(@Nullable ICapabilityProvider provider, @Nullable Direction direction) {
+    public static Optional<IInfusionHandler> handler(@Nullable ICapabilityProvider provider, @Nullable Direction direction) {
         if (provider == null) {
             return Optional.empty();
         } else if (Capabilities.INFUSION_HANDLER_CAPABILITY != null && provider.getCapability(Capabilities.INFUSION_HANDLER_CAPABILITY, direction).isPresent()) {
@@ -57,38 +34,40 @@ public class InfuseUtils {
     }
 
     @Nonnull
-    public static InfusionStack insertInfuse(IInfusionHandler handler, InfusionStack stack, @Nullable Direction direction, Action action) {
+    public static InfusionStack insert(IInfusionHandler handler, InfusionStack stack, @Nullable Direction direction, Action action) {
         if (handler instanceof IInfusionHandler.ISidedInfusionHandler) {
             return ((IInfusionHandler.ISidedInfusionHandler) handler).insertChemical(stack, direction, action);
         } else return handler.insertChemical(stack, action);
     }
 
     @Nonnull
-    public static InfusionStack extractInfuse(IInfusionHandler handler, long amount, @Nullable Direction direction, Action action) {
+    public static InfusionStack extract(IInfusionHandler handler, long amount, @Nullable Direction direction, Action action) {
         if (handler instanceof IInfusionHandler.ISidedInfusionHandler) {
             return ((IInfusionHandler.ISidedInfusionHandler) handler).extractChemical(amount, direction, action);
         } else return handler.extractChemical(amount, action);
     }
 
-    public static List<InfuseType> getInfuseInTank(@Nonnull IInfusionHandler handler, @Nullable Direction direction) {
+    public static List<InfuseType> chemicalInTank(@Nonnull IInfusionHandler handler, @Nullable Direction direction) {
         List<InfuseType> infuses = new ArrayList<>();
         if (handler instanceof IInfusionHandler.ISidedInfusionHandler) {
             for (int i = 0; i < ((IInfusionHandler.ISidedInfusionHandler) handler).getTanks(direction); i++) {
-                infuses.add(((IInfusionHandler.ISidedInfusionHandler) handler).getChemicalInTank(i, direction).getType());
+                InfuseType infuse = ((IInfusionHandler.ISidedInfusionHandler) handler).getChemicalInTank(i, direction).getType();
+                if (!infuse.isEmptyType()) infuses.add(infuse);
             }
         } else {
             for (int i = 0; i < handler.getTanks(); i++) {
-                infuses.add(handler.getChemicalInTank(i).getType());
+                InfuseType infuse = handler.getChemicalInTank(i).getType();
+                if (!infuse.isEmptyType()) infuses.add(infuse);
             }
         }
         return infuses;
     }
 
-    public static List<InfuseType> getInfuseInTank(@Nonnull IInfusionHandler handler) {
-        return getInfuseInTank(handler, null);
+    public static List<InfuseType> chemicalInTank(@Nonnull IInfusionHandler handler) {
+        return chemicalInTank(handler, null);
     }
 
-    public static long getInfuseCount(@Nonnull IInfusionHandler handler, @Nullable Direction direction, @Nullable Predicate<InfusionStack> filter) {
+    public static long amountInTank(@Nonnull IInfusionHandler handler, @Nullable Direction direction, @Nullable Predicate<InfusionStack> filter) {
         long count = 0;
         if (handler instanceof IInfusionHandler.ISidedInfusionHandler) {
             for (int i = 0; i < ((IInfusionHandler.ISidedInfusionHandler) handler).getTanks(direction); i++) {
@@ -108,20 +87,20 @@ public class InfuseUtils {
         return count;
     }
 
-    public static long getInfuseCount(@Nonnull IInfusionHandler handler, @Nullable Direction direction, @Nullable InfuseType filter) {
-        return getInfuseCount(handler, direction, (stack) -> filter == null || stack.getType() == filter);
+    public static long amountInTank(@Nonnull IInfusionHandler handler, @Nullable Direction direction, @Nullable InfuseType filter) {
+        return amountInTank(handler, direction, (stack) -> filter == null || stack.getType() == filter);
     }
 
-    public static long getInfuseCount(@Nonnull IInfusionHandler handler, @Nullable Direction direction, @Nullable InfusionStack filter) {
-        return getInfuseCount(handler, direction, (stack) -> filter == null || stack.isTypeEqual(filter));
+    public static long amountInTank(@Nonnull IInfusionHandler handler, @Nullable Direction direction, @Nullable InfusionStack filter) {
+        return amountInTank(handler, direction, (stack) -> filter == null || stack.isTypeEqual(filter));
     }
 
-    public static long getInfuseCount(@Nonnull IInfusionHandler handler, @Nullable Direction direction) {
-        return getInfuseCount(handler, direction, (Predicate<InfusionStack>) null);
+    public static long amountInTank(@Nonnull IInfusionHandler handler, @Nullable Direction direction) {
+        return amountInTank(handler, direction, (Predicate<InfusionStack>) null);
     }
 
-    public static long getInfuseCount(@Nonnull IInfusionHandler handler) {
-        return getInfuseCount(handler, null);
+    public static long amountInTank(@Nonnull IInfusionHandler handler) {
+        return amountInTank(handler, null);
     }
 
 }

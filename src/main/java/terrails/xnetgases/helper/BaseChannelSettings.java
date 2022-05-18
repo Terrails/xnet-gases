@@ -6,18 +6,18 @@ import mcjty.rftoolsbase.api.xnet.channels.IControllerContext;
 import mcjty.rftoolsbase.api.xnet.gui.IEditorGui;
 import mcjty.rftoolsbase.api.xnet.gui.IndicatorIcon;
 import mcjty.rftoolsbase.api.xnet.helper.DefaultChannelSettings;
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.CompoundTag;
 
 import javax.annotation.Nullable;
 import java.util.Map;
 
-public abstract class ChemicalChannelSettings extends DefaultChannelSettings implements IChannelSettings {
+public abstract class BaseChannelSettings extends DefaultChannelSettings implements IChannelSettings {
 
     @Override
-    public abstract void readFromNBT(CompoundNBT compoundNBT);
+    public abstract void readFromNBT(CompoundTag compoundTag);
 
     @Override
-    public abstract void writeToNBT(CompoundNBT compoundNBT);
+    public abstract void writeToNBT(CompoundTag compoundTag);
 
     @Override
     public abstract JsonObject writeToJson();

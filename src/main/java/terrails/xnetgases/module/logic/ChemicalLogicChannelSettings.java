@@ -10,12 +10,13 @@ import mcjty.rftoolsbase.api.xnet.gui.IndicatorIcon;
 import mcjty.rftoolsbase.api.xnet.helper.DefaultChannelSettings;
 import mcjty.rftoolsbase.api.xnet.keys.SidedConsumer;
 import mcjty.xnet.modules.cables.blocks.ConnectorTileEntity;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.Direction;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import org.apache.commons.lang3.tuple.Pair;
+import terrails.xnetgases.module.logic.ChemicalLogicEnums.*;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -24,12 +25,12 @@ import java.util.Map;
 
 import static terrails.xnetgases.Constants.*;
 
-public class XGLogicChannelSettings extends DefaultChannelSettings implements IChannelSettings {
+public class ChemicalLogicChannelSettings extends DefaultChannelSettings implements IChannelSettings {
 
     private int delay = 0;
     private int colors = 0;
-    private List<Pair<SidedConsumer, XGLogicConnectorSettings>> sensors = null;
-    private List<Pair<SidedConsumer, XGLogicConnectorSettings>> outputs = null;
+    private List<Pair<SidedConsumer, ChemicalLogicConnectorSettings>> sensors = null;
+    private List<Pair<SidedConsumer, ChemicalLogicConnectorSettings>> outputs = null;
 
     @Override
     public JsonObject writeToJson() {
@@ -37,13 +38,13 @@ public class XGLogicChannelSettings extends DefaultChannelSettings implements IC
     }
 
     @Override
-    public void readFromNBT(CompoundNBT tag) {
+    public void readFromNBT(CompoundTag tag) {
         delay = tag.getInt("delay");
         colors = tag.getInt("colors");
     }
 
     @Override
-    public void writeToNBT(CompoundNBT tag) {
+    public void writeToNBT(CompoundTag tag) {
         tag.putInt("delay", delay);
         tag.putInt("colors", colors);
     }
@@ -60,37 +61,37 @@ public class XGLogicChannelSettings extends DefaultChannelSettings implements IC
 
         int d = delay / 5;
         updateCache(channel, context);
-        World world = context.getControllerWorld();
+        Level level = context.getControllerWorld();
 
         colors = 0;
-        for (Pair<SidedConsumer, XGLogicConnectorSettings> entry : sensors) {
-            XGLogicConnectorSettings settings = entry.getValue();
+        for (Pair<SidedConsumer, ChemicalLogicConnectorSettings> entry : sensors) {
+            ChemicalLogicConnectorSettings settings = entry.getValue();
             if (d % settings.getSpeed() != 0) {
                 // Use the color settings from this connector as we last remembered it
                 colors |= settings.getColorMask();
                 continue;
             }
             int sensorColors = 0;
-            BlockPos connectorPos = context.findConsumerPosition(entry.getKey().getConsumerId());
+            BlockPos connectorPos = context.findConsumerPosition(entry.getKey().consumerId());
             if (connectorPos != null) {
-                Direction side = entry.getKey().getSide();
+                Direction side = entry.getKey().side();
                 BlockPos pos = connectorPos.relative(side);
-                if (!LevelTools.isLoaded(world, pos)) {
+                if (!LevelTools.isLoaded(level, pos)) {
                     // If it is not chunkloaded we just use the color settings as we last remembered it
                     colors |= settings.getColorMask();
                     continue;
                 }
 
-                boolean sense = !checkRedstone(world, settings, connectorPos);
+                boolean sense = !checkRedstone(level, settings, connectorPos);
                 if (sense && !context.matchColor(settings.getColorsMask())) {
                     sense = false;
                 }
 
                 // If sense is false the sensor is disabled which means the colors from it will also be disabled
                 if (sense) {
-                    TileEntity te = world.getBlockEntity(pos);
+                    BlockEntity te = level.getBlockEntity(pos);
 
-                    for (XGSensor sensor : settings.getSensors()) {
+                    for (ChemicalSensor sensor : settings.getSensors()) {
                         if (sensor.test(te, settings)) {
                             sensorColors |= 1 << sensor.getOutputColor().ordinal();
                         }
@@ -101,24 +102,23 @@ public class XGLogicChannelSettings extends DefaultChannelSettings implements IC
             colors |= sensorColors;
         }
 
-        for (Pair<SidedConsumer, XGLogicConnectorSettings> entry : outputs) {
-            XGLogicConnectorSettings settings = entry.getValue();
+        for (Pair<SidedConsumer, ChemicalLogicConnectorSettings> entry : outputs) {
+            ChemicalLogicConnectorSettings settings = entry.getValue();
             if (d % settings.getSpeed() != 0) {
                 continue;
             }
 
-            BlockPos connectorPos = context.findConsumerPosition(entry.getKey().getConsumerId());
+            BlockPos connectorPos = context.findConsumerPosition(entry.getKey().consumerId());
             if (connectorPos != null) {
-                Direction side = entry.getKey().getSide();
-                if (!LevelTools.isLoaded(world, connectorPos)) {
+                Direction side = entry.getKey().side();
+                if (!LevelTools.isLoaded(level, connectorPos)) {
                     continue;
                 }
 
-                TileEntity te = world.getBlockEntity(connectorPos);
-                if (te instanceof ConnectorTileEntity) {
-                    ConnectorTileEntity connectorTE = (ConnectorTileEntity) te;
+                BlockEntity te = level.getBlockEntity(connectorPos);
+                if (te instanceof ConnectorTileEntity connectorTE) {
                     int powerOut;
-                    if (checkRedstone(world, settings, connectorPos)) {
+                    if (checkRedstone(level, settings, connectorPos)) {
                         powerOut = 0;
                     } else if (!context.matchColor(settings.getColorsMask())) {
                         powerOut = 0;
@@ -137,8 +137,8 @@ public class XGLogicChannelSettings extends DefaultChannelSettings implements IC
             outputs = new ArrayList<>();
             Map<SidedConsumer, IConnectorSettings> connectors = context.getConnectors(channel);
             for (Map.Entry<SidedConsumer, IConnectorSettings> entry : connectors.entrySet()) {
-                XGLogicConnectorSettings con = (XGLogicConnectorSettings) entry.getValue();
-                if (con.getLogicMode() == XGLogicConnectorSettings.LogicMode.SENSOR) {
+                ChemicalLogicConnectorSettings con = (ChemicalLogicConnectorSettings) entry.getValue();
+                if (con.getConnectorMode() == ConnectorMode.SENSOR) {
                     sensors.add(Pair.of(entry.getKey(), con));
                 } else {
                     outputs.add(Pair.of(entry.getKey(), con));
@@ -147,8 +147,8 @@ public class XGLogicChannelSettings extends DefaultChannelSettings implements IC
 
             connectors = context.getRoutedConnectors(channel);
             for (Map.Entry<SidedConsumer, IConnectorSettings> entry : connectors.entrySet()) {
-                XGLogicConnectorSettings con = (XGLogicConnectorSettings) entry.getValue();
-                if (con.getLogicMode() == XGLogicConnectorSettings.LogicMode.OUTPUT) {
+                ChemicalLogicConnectorSettings con = (ChemicalLogicConnectorSettings) entry.getValue();
+                if (con.getConnectorMode() == ConnectorMode.OUTPUT) {
                     outputs.add(Pair.of(entry.getKey(), con));
                 }
             }

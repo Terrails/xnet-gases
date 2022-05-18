@@ -14,16 +14,10 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.loading.FMLPaths;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import terrails.xnetgases.helper.ChannelModule;
-import terrails.xnetgases.module.gas.GasChannelModule;
-import terrails.xnetgases.module.gas.GasUtils;
-import terrails.xnetgases.module.infuse.InfuseChannelModule;
-import terrails.xnetgases.module.infuse.InfuseUtils;
-import terrails.xnetgases.module.logic.XGLogicChannelModule;
-import terrails.xnetgases.module.pigment.PigmentChannelModule;
-import terrails.xnetgases.module.pigment.PigmentUtils;
-import terrails.xnetgases.module.slurry.SlurryChannelModule;
-import terrails.xnetgases.module.slurry.SlurryUtils;
+import terrails.xnetgases.module.chemical.ChemicalChannelModule;
+import terrails.xnetgases.helper.BaseChannelModule;
+import terrails.xnetgases.module.chemical.utils.ChemicalHelper;
+import terrails.xnetgases.module.logic.ChemicalLogicChannelModule;
 
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -36,12 +30,9 @@ public class XNetGases {
 
     private static final ForgeConfigSpec CONFIG_SPEC;
 
-    private static final ChannelModule[] MODULES = {
-            new GasChannelModule(),
-            new InfuseChannelModule(),
-            new XGLogicChannelModule(),
-            new PigmentChannelModule(),
-            new SlurryChannelModule()
+    private static final BaseChannelModule[] MODULES = {
+            new ChemicalLogicChannelModule(),
+            new ChemicalChannelModule()
     };
 
     public XNetGases() {
@@ -54,15 +45,11 @@ public class XNetGases {
         loadConfig(FMLPaths.CONFIGDIR.get().resolve("xnetgases.toml"));
 
         Arrays.stream(MODULES).forEach(XNet.xNetApi::registerChannelType);
-
-        XNet.xNetApi.registerConnectable((reader, connectorPos, blockPos, tile, direction) -> {
-            if (GasUtils.getGasHandlerFor(tile, direction).isPresent()
-                    || SlurryUtils.getSlurryHandlerFor(tile, direction).isPresent()
-                    || InfuseUtils.getInfuseHandlerFor(tile, direction).isPresent()
-                    || PigmentUtils.getPigmentHandlerFor(tile, direction).isPresent()) {
+        XNet.xNetApi.registerConnectable(((blockGetter, connectorPos, blockPos, blockEntity, direction) -> {
+            if (ChemicalHelper.handlerPresent(blockEntity, direction)) {
                 return IConnectable.ConnectResult.YES;
             } else return IConnectable.ConnectResult.DEFAULT;
-        });
+        }));
     }
 
     static {
