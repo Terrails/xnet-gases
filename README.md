@@ -1,5 +1,5 @@
 # XNet Gases
-![](src/main/resources/xnetgases.png|width=250px)
+<img src="src/main/resources/xnetgases.png" width="250px" height="250px">
 A cross-compatibility mod for [XNet](https://github.com/McJtyMods/XNet) and [Mekanism](https://github.com/mekanism/mekanism).
 
 Allows XNet to transport Mekanism chemicals. Gases, slurries, pigments and infuse.  
