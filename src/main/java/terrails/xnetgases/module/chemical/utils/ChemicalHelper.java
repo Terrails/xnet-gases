@@ -129,28 +129,28 @@ public class ChemicalHelper {
             Chemical<?> chemical = null;
             switch (type) {
                 case GAS -> {
-                    Optional<IGasHandler> opt = stack.getCapability(Capabilities.GAS_HANDLER_CAPABILITY).resolve();
+                    Optional<IGasHandler> opt = stack.getCapability(Capabilities.GAS_HANDLER).resolve();
                     if (opt.isPresent()) {
                         GasStack gas = opt.get().getChemicalInTank(0);
                         if (!gas.isEmpty()) chemical = gas.getRaw();
                     }
                 }
                 case INFUSE -> {
-                    Optional<IInfusionHandler> opt = stack.getCapability(Capabilities.INFUSION_HANDLER_CAPABILITY).resolve();
+                    Optional<IInfusionHandler> opt = stack.getCapability(Capabilities.INFUSION_HANDLER).resolve();
                     if (opt.isPresent()) {
                         InfusionStack infuse = opt.get().getChemicalInTank(0);
                         if (!infuse.isEmpty()) chemical = infuse.getRaw();
                     }
                 }
                 case PIGMENT -> {
-                    Optional<IPigmentHandler> opt = stack.getCapability(Capabilities.PIGMENT_HANDLER_CAPABILITY).resolve();
+                    Optional<IPigmentHandler> opt = stack.getCapability(Capabilities.PIGMENT_HANDLER).resolve();
                     if (opt.isPresent()) {
                         PigmentStack pigment = opt.get().getChemicalInTank(0);
                         if (!pigment.isEmpty()) chemical = pigment.getRaw();
                     }
                 }
                 case SLURRY -> {
-                    Optional<ISlurryHandler> opt = stack.getCapability(Capabilities.SLURRY_HANDLER_CAPABILITY).resolve();
+                    Optional<ISlurryHandler> opt = stack.getCapability(Capabilities.SLURRY_HANDLER).resolve();
                     if (opt.isPresent()) {
                         SlurryStack slurry = opt.get().getChemicalInTank(0);
                         if (!slurry.isEmpty()) chemical = slurry.getRaw();

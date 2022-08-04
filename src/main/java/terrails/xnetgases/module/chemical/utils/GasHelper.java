@@ -21,8 +21,8 @@ public class GasHelper {
     public static Optional<IGasHandler> handler(@Nullable ICapabilityProvider provider, @Nullable Direction direction) {
         if (provider == null) {
             return Optional.empty();
-        } else if (Capabilities.GAS_HANDLER_CAPABILITY != null && provider.getCapability(Capabilities.GAS_HANDLER_CAPABILITY, direction).isPresent()) {
-            return Optional.of(provider.getCapability(Capabilities.GAS_HANDLER_CAPABILITY, direction)
+        } else if (Capabilities.GAS_HANDLER != null && provider.getCapability(Capabilities.GAS_HANDLER, direction).isPresent()) {
+            return Optional.of(provider.getCapability(Capabilities.GAS_HANDLER, direction)
                     .orElseThrow(() -> new IllegalArgumentException("IGasHandler is 'null' even though it said that its present")));
         } else if (direction != null && provider instanceof IGasHandler.ISidedGasHandler && ((IGasHandler.ISidedGasHandler) provider).getTanks(direction) >= 1) {
             return Optional.of((IGasHandler) provider);

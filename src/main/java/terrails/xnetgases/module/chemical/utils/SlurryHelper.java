@@ -21,8 +21,8 @@ public class SlurryHelper {
     public static Optional<ISlurryHandler> handler(@Nullable ICapabilityProvider provider, @Nullable Direction direction) {
         if (provider == null) {
             return Optional.empty();
-        } else if (Capabilities.SLURRY_HANDLER_CAPABILITY != null && provider.getCapability(Capabilities.SLURRY_HANDLER_CAPABILITY, direction).isPresent()) {
-            return Optional.of(provider.getCapability(Capabilities.SLURRY_HANDLER_CAPABILITY, direction)
+        } else if (Capabilities.SLURRY_HANDLER != null && provider.getCapability(Capabilities.SLURRY_HANDLER, direction).isPresent()) {
+            return Optional.of(provider.getCapability(Capabilities.SLURRY_HANDLER, direction)
                     .orElseThrow(() -> new IllegalArgumentException("ISlurryHandler is 'null' even though it said that its present")));
         } else if (direction != null && provider instanceof ISlurryHandler.ISidedSlurryHandler && ((ISlurryHandler.ISidedSlurryHandler) provider).getTanks(direction) >= 1) {
             return Optional.of((ISlurryHandler) provider);

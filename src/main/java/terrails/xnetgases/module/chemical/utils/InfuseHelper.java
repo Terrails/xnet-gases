@@ -21,8 +21,8 @@ public class InfuseHelper {
     public static Optional<IInfusionHandler> handler(@Nullable ICapabilityProvider provider, @Nullable Direction direction) {
         if (provider == null) {
             return Optional.empty();
-        } else if (Capabilities.INFUSION_HANDLER_CAPABILITY != null && provider.getCapability(Capabilities.INFUSION_HANDLER_CAPABILITY, direction).isPresent()) {
-            return Optional.of(provider.getCapability(Capabilities.INFUSION_HANDLER_CAPABILITY, direction)
+        } else if (Capabilities.INFUSION_HANDLER != null && provider.getCapability(Capabilities.INFUSION_HANDLER, direction).isPresent()) {
+            return Optional.of(provider.getCapability(Capabilities.INFUSION_HANDLER, direction)
                     .orElseThrow(() -> new IllegalArgumentException("IInfusionHandler is 'null' even though it said that its present")));
         } else if (direction != null && provider instanceof IInfusionHandler.ISidedInfusionHandler && ((IInfusionHandler.ISidedInfusionHandler) provider).getTanks(direction) >= 1) {
             return Optional.of((IInfusionHandler) provider);

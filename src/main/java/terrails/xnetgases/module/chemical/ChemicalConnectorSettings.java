@@ -88,26 +88,26 @@ public class ChemicalConnectorSettings extends BaseConnectorSettings<ChemicalSta
         if (!filter.isEmpty()) {
             switch (connectorType) {
                 case GAS:
-                    if (Capabilities.GAS_HANDLER_CAPABILITY != null && filter.getCapability(Capabilities.GAS_HANDLER_CAPABILITY).isPresent()) {
-                        IGasHandler handler = filter.getCapability(Capabilities.GAS_HANDLER_CAPABILITY).orElseThrow(() -> new IllegalArgumentException("IGasHandler Capability doesn't exist!"));
+                    if (Capabilities.GAS_HANDLER != null && filter.getCapability(Capabilities.GAS_HANDLER).isPresent()) {
+                        IGasHandler handler = filter.getCapability(Capabilities.GAS_HANDLER).orElseThrow(() -> new IllegalArgumentException("IGasHandler Capability doesn't exist!"));
                         return handler.getChemicalInTank(0);
                     }
                     break;
                 case INFUSE:
-                    if (Capabilities.INFUSION_HANDLER_CAPABILITY != null && filter.getCapability(Capabilities.INFUSION_HANDLER_CAPABILITY).isPresent()) {
-                        IInfusionHandler handler = filter.getCapability(Capabilities.INFUSION_HANDLER_CAPABILITY).orElseThrow(() -> new IllegalArgumentException("IInfusionHandler Capability doesn't exist!"));
+                    if (Capabilities.INFUSION_HANDLER != null && filter.getCapability(Capabilities.INFUSION_HANDLER).isPresent()) {
+                        IInfusionHandler handler = filter.getCapability(Capabilities.INFUSION_HANDLER).orElseThrow(() -> new IllegalArgumentException("IInfusionHandler Capability doesn't exist!"));
                         return handler.getChemicalInTank(0);
                     }
                     break;
                 case PIGMENT:
-                    if (Capabilities.PIGMENT_HANDLER_CAPABILITY != null && filter.getCapability(Capabilities.PIGMENT_HANDLER_CAPABILITY).isPresent()) {
-                        IPigmentHandler handler = filter.getCapability(Capabilities.PIGMENT_HANDLER_CAPABILITY).orElseThrow(() -> new IllegalArgumentException("IPigmentHandler Capability doesn't exist!"));
+                    if (Capabilities.PIGMENT_HANDLER != null && filter.getCapability(Capabilities.PIGMENT_HANDLER).isPresent()) {
+                        IPigmentHandler handler = filter.getCapability(Capabilities.PIGMENT_HANDLER).orElseThrow(() -> new IllegalArgumentException("IPigmentHandler Capability doesn't exist!"));
                         return handler.getChemicalInTank(0);
                     }
                     break;
                 case SLURRY:
-                    if (Capabilities.SLURRY_HANDLER_CAPABILITY != null && filter.getCapability(Capabilities.SLURRY_HANDLER_CAPABILITY).isPresent()) {
-                        ISlurryHandler handler = filter.getCapability(Capabilities.SLURRY_HANDLER_CAPABILITY).orElseThrow(() -> new IllegalArgumentException("ISlurryHandler Capability doesn't exist!"));
+                    if (Capabilities.SLURRY_HANDLER != null && filter.getCapability(Capabilities.SLURRY_HANDLER).isPresent()) {
+                        ISlurryHandler handler = filter.getCapability(Capabilities.SLURRY_HANDLER).orElseThrow(() -> new IllegalArgumentException("ISlurryHandler Capability doesn't exist!"));
                         return handler.getChemicalInTank(0);
                     }
                     break;

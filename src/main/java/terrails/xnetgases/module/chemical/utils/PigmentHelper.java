@@ -21,8 +21,8 @@ public class PigmentHelper {
     public static Optional<IPigmentHandler> handler(@Nullable ICapabilityProvider provider, @Nullable Direction direction) {
         if (provider == null) {
             return Optional.empty();
-        } else if (Capabilities.PIGMENT_HANDLER_CAPABILITY != null && provider.getCapability(Capabilities.PIGMENT_HANDLER_CAPABILITY, direction).isPresent()) {
-            return Optional.of(provider.getCapability(Capabilities.PIGMENT_HANDLER_CAPABILITY, direction)
+        } else if (Capabilities.PIGMENT_HANDLER != null && provider.getCapability(Capabilities.PIGMENT_HANDLER, direction).isPresent()) {
+            return Optional.of(provider.getCapability(Capabilities.PIGMENT_HANDLER, direction)
                     .orElseThrow(() -> new IllegalArgumentException("IPigmentHandler is 'null' even though it said that its present")));
         } else if (direction != null && provider instanceof IPigmentHandler.ISidedPigmentHandler && ((IPigmentHandler.ISidedPigmentHandler) provider).getTanks(direction) >= 1) {
             return Optional.of((IPigmentHandler) provider);
