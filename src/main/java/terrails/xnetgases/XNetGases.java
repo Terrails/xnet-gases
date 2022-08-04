@@ -36,14 +36,12 @@ public class XNetGases {
     };
 
     public XNetGases() {
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, CONFIG_SPEC, "xnetgases.toml");
+        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, CONFIG_SPEC, "xnetgases.toml");
         final IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
         bus.addListener(this::setup);
     }
 
     private void setup(final FMLCommonSetupEvent event) {
-        loadConfig(FMLPaths.CONFIGDIR.get().resolve("xnetgases.toml"));
-
         Arrays.stream(MODULES).forEach(XNet.xNetApi::registerChannelType);
         XNet.xNetApi.registerConnectable(((blockGetter, connectorPos, blockPos, blockEntity, direction) -> {
             if (ChemicalHelper.handlerPresent(blockEntity, direction)) {
@@ -57,20 +55,5 @@ public class XNetGases {
         builder.comment("General settings").push("general");
         Arrays.stream(MODULES).forEach(module -> module.setupConfig(builder));
         CONFIG_SPEC = builder.pop().build();
-    }
-
-    private static void loadConfig(Path path) {
-        XNetGases.LOGGER.debug("Loading config file {}", path);
-
-        final CommentedFileConfig configData = CommentedFileConfig.builder(path)
-                .sync()
-                .autosave()
-                .writingMode(WritingMode.REPLACE)
-                .build();
-
-        XNetGases.LOGGER.debug("Built TOML config for {}", path.toString());
-        configData.load();
-        XNetGases.LOGGER.debug("Loaded TOML config for {}", path.toString());
-        CONFIG_SPEC.setConfig(configData);
     }
 }
