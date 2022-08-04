@@ -22,6 +22,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 import static terrails.xnetgases.Constants.*;
 
@@ -64,12 +65,11 @@ public class ChemicalConnectorSettings extends BaseConnectorSettings<ChemicalSta
     }
 
     public int getRate() {
-        if (transferRate == null) {
-            return getMaxRate(this.advanced);
-        } else return transferRate;
+        // 'advanced' is always false here, so default to non-advanced speed
+        return Objects.requireNonNullElse(this.transferRate, getMaxRate(false));
     }
 
-    public int getMaxRate(boolean advanced) {
+    private int getMaxRate(boolean advanced) {
         return switch (connectorType) {
             case GAS -> advanced ? ChemicalChannelModule.maxGasRateAdvanced.get() : ChemicalChannelModule.maxGasRateNormal.get();
             case INFUSE -> advanced ? ChemicalChannelModule.maxInfuseRateAdvanced.get() : ChemicalChannelModule.maxInfuseRateNormal.get();
@@ -171,7 +171,7 @@ public class ChemicalConnectorSettings extends BaseConnectorSettings<ChemicalSta
 
         if (this.connectorMode == ConnectorMode.INS) {
             gui
-                    .label("Pri").integer(TAG_PRIORITY, /*this.connectorMode == ConnectorMode.EXT ? "Extraction priority" : */"Insertion priority", this.priority, 36)
+                    .label("Pri").integer(TAG_PRIORITY, "Insertion priority", this.priority, 36)
                     .shift(5)
                     .toggle(TAG_REQUIRE_RATE, "Require insert rate", this.transferRateRequired)
                     .nl();
@@ -182,8 +182,7 @@ public class ChemicalConnectorSettings extends BaseConnectorSettings<ChemicalSta
         }
 
         gui
-                .label("Rate").integer(TAG_RATE, this.connectorMode == ConnectorMode.EXT ? "Extraction rate|(max " + maxTransferRate + "mb)" : "Insertion rate|(max " + maxTransferRate + "mb)", this.transferRate, 48, maxTransferRate)
-                .shift(10)
+                .label("Rate").integer(TAG_RATE, this.connectorMode == ConnectorMode.EXT ? "Extraction rate|(max " + maxTransferRate + "mb)" : "Insertion rate|(max " + maxTransferRate + "mb)", this.transferRate, 60, maxTransferRate)
                 .label(this.connectorMode == ConnectorMode.EXT ? "Min" : "Max")
                 .integer(TAG_MIN_MAX, this.connectorMode == ConnectorMode.EXT ? "Keep this amount in tank" : "Disable insertion if|amount is too high", this.minMaxLimit, 48)
                 .nl()
