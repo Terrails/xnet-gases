@@ -18,7 +18,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.Nullable;
-import terrails.xnetgases.XNetGases;
 import terrails.xnetgases.helper.BaseChannelSettings;
 import terrails.xnetgases.helper.ModuleEnums;
 import terrails.xnetgases.helper.ModuleEnums.*;

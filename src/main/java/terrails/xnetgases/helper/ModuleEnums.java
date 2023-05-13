@@ -1,6 +1,5 @@
 package terrails.xnetgases.helper;
 
-
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Map;
