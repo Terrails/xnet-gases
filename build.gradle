@@ -72,10 +72,8 @@ dependencies {
     implementation fg.deobf("curse.maven:mekanism-268560:${project.mekanism_fileId}")
 }
 
-task sourcesJar(type: Jar, dependsOn: classes) {
-    archiveClassifier.set('sources')
-    from sourceSets.main.allSource
-    from "LICENSE"
+java {
+    withSourcesJar()
 }
 
 artifacts {
