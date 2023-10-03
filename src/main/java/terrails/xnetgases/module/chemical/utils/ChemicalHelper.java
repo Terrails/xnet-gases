@@ -124,7 +124,7 @@ public class ChemicalHelper {
     public static ItemStack normalizeStack(ItemStack stack, ChemicalEnums.Type type) {
         if (stack == null || type == null) {
             return ItemStack.EMPTY;
-        } else if (!stack.sameItem(MekanismBlocks.CREATIVE_CHEMICAL_TANK.getItemStack())) {
+        } else if (!stack.is(MekanismBlocks.CREATIVE_CHEMICAL_TANK.asItem())) {
 
             Chemical<?> chemical = null;
             switch (type) {
