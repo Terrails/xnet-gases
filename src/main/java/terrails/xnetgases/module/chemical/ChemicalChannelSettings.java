@@ -304,7 +304,6 @@ public class ChemicalChannelSettings extends BaseChannelSettings {
 
                 if (remaining.isEmpty() || (!remaining.isEmpty() && copy.getAmount() != remaining.getAmount())) {
                     this.roundRobinOffset = (this.roundRobinOffset + 1) % this.consumers.size();
-//                    XNetGases.LOGGER.info("Inserted '{}mB' of '{}' at '{}'", (copy.getAmount() - remaining.getAmount()), copy.getType().getName(), pos);
                     amount -= (copy.getAmount() - remaining.getAmount());
                     if (amount <= 0) return;
                 }
@@ -363,11 +362,6 @@ public class ChemicalChannelSettings extends BaseChannelSettings {
     @Override
     public void createGui(IEditorGui gui) {
         gui.nl().choices(TAG_MODE, "Distribution mode", this.channelMode, ChannelMode.values());
-    }
-
-    @Override
-    public boolean isEnabled(String s) {
-        return true;
     }
 
     @Override
