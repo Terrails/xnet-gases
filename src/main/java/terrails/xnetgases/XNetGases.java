@@ -1,40 +1,37 @@
 package terrails.xnetgases;
 
+import com.mojang.logging.LogUtils;
+import org.slf4j.Logger;
 import mcjty.rftoolsbase.api.xnet.channels.IConnectable;
 import mcjty.xnet.XNet;
-import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.ModLoadingContext;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModLoadingContext;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.neoforge.common.ModConfigSpec;
 import terrails.xnetgases.module.chemical.ChemicalChannelModule;
 import terrails.xnetgases.helper.BaseChannelModule;
-import terrails.xnetgases.module.chemical.utils.ChemicalHelper;
+import terrails.xnetgases.module.chemical.ChemicalHelper;
 import terrails.xnetgases.module.logic.ChemicalLogicChannelModule;
 
-import java.nio.file.Path;
 import java.util.Arrays;
 
 @Mod(XNetGases.MOD_ID)
 public class XNetGases {
 
     public static final String MOD_ID = "xnetgases";
-    public static final Logger LOGGER = LogManager.getLogger();
+    public static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final ForgeConfigSpec CONFIG_SPEC;
+    private static final ModConfigSpec CONFIG_SPEC;
 
     private static final BaseChannelModule[] MODULES = {
             new ChemicalLogicChannelModule(),
             new ChemicalChannelModule()
     };
 
-    public XNetGases() {
+    public XNetGases(final IEventBus bus) {
         ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, CONFIG_SPEC, "xnetgases.toml");
-        final IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
         bus.addListener(this::setup);
     }
 
@@ -48,7 +45,7 @@ public class XNetGases {
     }
 
     static {
-        final ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
+        final ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
         builder.comment("General settings").push("general");
         Arrays.stream(MODULES).forEach(module -> module.setupConfig(builder));
         CONFIG_SPEC = builder.pop().build();

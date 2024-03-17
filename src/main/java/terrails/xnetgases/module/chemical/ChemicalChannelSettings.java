@@ -12,16 +12,15 @@ import mcjty.rftoolsbase.api.xnet.keys.SidedConsumer;
 import mcjty.xnet.setup.Config;
 import mekanism.api.Action;
 import mekanism.api.chemical.ChemicalStack;
+import mekanism.api.chemical.ChemicalType;
 import mekanism.api.chemical.IChemicalHandler;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.Nullable;
 import terrails.xnetgases.helper.BaseChannelSettings;
 import terrails.xnetgases.helper.ModuleEnums;
 import terrails.xnetgases.helper.ModuleEnums.*;
-import terrails.xnetgases.module.chemical.utils.ChemicalHelper;
 
 import java.util.*;
 
@@ -103,24 +102,16 @@ public class ChemicalChannelSettings extends BaseChannelSettings {
                 BlockPos extractorPos = context.findConsumerPosition(consumer.consumerId());
                 if (extractorPos != null) {
                     BlockPos pos = extractorPos.relative(consumer.side());
-                    if (!LevelTools.isLoaded(level, pos)) {
-                        continue;
-                    }
+                    IChemicalHandler<?, ?> handler = ChemicalHelper.getChemicalHandler(level, pos, settings.getFacing(), settings.getConnectorType());
 
-                    BlockEntity be = level.getBlockEntity(pos);
-                    ChemicalEnums.Type type = settings.getConnectorType();
-
-                    Optional<IChemicalHandler<?, ?>> optional = ChemicalHelper.handler(be, settings.getFacing(), type);
-                    if (optional.isPresent()) {
-                        IChemicalHandler<?, ?> handler = optional.get();
-
+                    if (handler != null) {
                         if (checkRedstone(level, settings, extractorPos) || !context.matchColor(settings.getColorsMask()))
                             return;
 
                         ChemicalStack<?> filter = settings.getMatcher();
                         long toExtract = settings.getRate();
 
-                        long amount = ChemicalHelper.amountInTank(handler, settings.getFacing(), filter, type);
+                        long amount = ChemicalHelper.amountInTank(handler, settings.getFacing(), filter);
                         // Just skip extractor if there is no chemical in tank
                         if (amount <= 0) continue;
 
@@ -134,7 +125,7 @@ public class ChemicalChannelSettings extends BaseChannelSettings {
                         }
 
                         List<Pair<SidedConsumer, ChemicalConnectorSettings>> inserted = new ArrayList<>();
-                        ChemicalStack<?> extractStack = ChemicalHelper.extract(handler, toExtract, settings.getFacing(), Action.SIMULATE, settings.getConnectorType());
+                        ChemicalStack<?> extractStack = ChemicalHelper.extract(handler, toExtract, settings.getFacing(), Action.SIMULATE);
                         if (extractStack.isEmpty() || (filter != null && filter.getType() != extractStack.getType())) {
                             continue;
                         }
@@ -151,7 +142,7 @@ public class ChemicalChannelSettings extends BaseChannelSettings {
 
                         this.roundRobinOffset = (this.roundRobinOffset + this.roundRobinIncrement) % this.consumers.size();
                         if (context.checkAndConsumeRF(Config.controllerOperationRFT.get())) {
-                            ChemicalStack<?> stack = ChemicalHelper.extract(handler, toExtract, settings.getFacing(), Action.EXECUTE, settings.getConnectorType());
+                            ChemicalStack<?> stack = ChemicalHelper.extract(handler, toExtract, settings.getFacing(), Action.EXECUTE);
                             if (stack.isEmpty()) {
                                 throw new NullPointerException(handler.getClass().getName() + " misbehaved! handler.extract(" + toExtract + ", Action.SIMULATE, ConnectorType." + settings.getConnectorType().name() + ") returned null even though handler.extract(" + toExtract + ", Action.SIMULATE, ConnectorType." + settings.getConnectorType().name() + ") did not");
                             }
@@ -163,7 +154,7 @@ public class ChemicalChannelSettings extends BaseChannelSettings {
         }
     }
 
-    private long insertSimulate(List<Pair<SidedConsumer, ChemicalConnectorSettings>> inserted, IControllerContext context, ChemicalStack<?> stack, ChemicalEnums.Type type) {
+    private long insertSimulate(List<Pair<SidedConsumer, ChemicalConnectorSettings>> inserted, IControllerContext context, ChemicalStack<?> stack, ChemicalType type) {
         Level level = context.getControllerWorld();
         if (this.channelMode == ChannelMode.PRIORITY) {
             this.roundRobinOffset = 0;
@@ -221,50 +212,50 @@ public class ChemicalChannelSettings extends BaseChannelSettings {
             if (settings.getMatcher() == null || settings.getMatcher().getType() == stack.getType()) {
                 BlockPos consumerPos = context.findConsumerPosition(consumer.consumerId());
                 if (consumerPos != null) {
-                    if (!LevelTools.isLoaded(level, consumerPos) || checkRedstone(level, settings, consumerPos) || !context.matchColor(settings.getColorsMask())) {
+                    if (checkRedstone(level, settings, consumerPos) || !context.matchColor(settings.getColorsMask())) {
                         this.roundRobinIncrement++;
                         continue;
                     }
 
                     BlockPos pos = consumerPos.relative(consumer.side());
-                    BlockEntity be = level.getBlockEntity(pos);
+                    IChemicalHandler<?, ?> handler = ChemicalHelper.getChemicalHandler(level, pos, settings.getFacing(), settings.getConnectorType());
 
-                    Optional<IChemicalHandler<?, ?>> optional = ChemicalHelper.handler(be, settings.getFacing(), settings.getConnectorType());
-                    if (optional.isPresent()) {
-                        IChemicalHandler<?, ?> handler = optional.get();
+                    if (handler == null) {
+                        this.roundRobinIncrement++;
+                        continue;
+                    }
 
-                        long toInsert = Math.min(settings.getRate(), amount);
+                    long toInsert = Math.min(settings.getRate(), amount);
 
-                        Integer count = settings.getMinMaxLimit();
-                        if (count != null) {
-                            long a = ChemicalHelper.amountInTank(handler, settings.getFacing(), settings.getMatcher(), settings.getConnectorType());
-                            long canInsert = count - a;
-                            if (canInsert <= 0) {
-                                continue;
-                            }
-                            toInsert = Math.min(toInsert, canInsert);
-                        }
-
-                        if (settings.isTransferRateRequired() && settings.getRate() > toInsert) {
+                    Integer count = settings.getMinMaxLimit();
+                    if (count != null) {
+                        long a = ChemicalHelper.amountInTank(handler, settings.getFacing(), settings.getMatcher());
+                        long canInsert = count - a;
+                        if (canInsert <= 0) {
                             continue;
                         }
+                        toInsert = Math.min(toInsert, canInsert);
+                    }
 
-                        ChemicalStack<?> copy = stack.copy();
-                        copy.setAmount(toInsert);
+                    if (settings.isTransferRateRequired() && settings.getRate() > toInsert) {
+                        continue;
+                    }
 
-                        ChemicalStack<?> remaining = ChemicalHelper.insert(handler, copy, settings.getFacing(), Action.SIMULATE, settings.getConnectorType());
-                        if (remaining.isEmpty() || (!remaining.isEmpty() && copy.getAmount() != remaining.getAmount())) {
-                            inserted.add(entry);
-                            amount -= (copy.getAmount() - remaining.getAmount());
-                            if (amount <= 0) {
-                                return 0;
-                            }
-                        } else if (remaining.equals(copy)) {
-                            this.roundRobinIncrement++;
+                    ChemicalStack<?> copy = stack.copy();
+                    copy.setAmount(toInsert);
+
+                    ChemicalStack<?> remaining = ChemicalHelper.insert(handler, copy, settings.getFacing(), Action.SIMULATE);
+                    if (remaining.isEmpty() || (!remaining.isEmpty() && copy.getAmount() != remaining.getAmount())) {
+                        inserted.add(entry);
+                        amount -= (copy.getAmount() - remaining.getAmount());
+                        if (amount <= 0) {
+                            return 0;
                         }
-                    } else {
+                    } else if (remaining.equals(copy)) {
                         this.roundRobinIncrement++;
                     }
+                } else {
+                    this.roundRobinIncrement++;
                 }
             }
         }
@@ -281,17 +272,14 @@ public class ChemicalChannelSettings extends BaseChannelSettings {
             if (consumerPos == null) continue;
 
             BlockPos pos = consumerPos.relative(consumer.side());
-            BlockEntity be = context.getControllerWorld().getBlockEntity(pos);
+            IChemicalHandler<?, ?> handler = ChemicalHelper.getChemicalHandler(context.getControllerWorld(), pos, settings.getFacing(), settings.getConnectorType());
 
-            Optional<IChemicalHandler<?, ?>> optional = ChemicalHelper.handler(be, settings.getFacing(), settings.getConnectorType());
-            if (optional.isPresent()) {
-                IChemicalHandler<?, ?> handler = optional.get();
-
+            if (handler != null) {
                 long toInsert = Math.min(settings.getRate(), amount);
 
                 Integer count = settings.getMinMaxLimit();
                 if (count != null) {
-                    long a = ChemicalHelper.amountInTank(handler, settings.getFacing(), settings.getMatcher(), settings.getConnectorType());
+                    long a = ChemicalHelper.amountInTank(handler, settings.getFacing(), settings.getMatcher());
                     long canInsert = count - a;
                     if (canInsert <= 0) continue;
                     toInsert = Math.min(toInsert, canInsert);
@@ -300,7 +288,7 @@ public class ChemicalChannelSettings extends BaseChannelSettings {
                 ChemicalStack<?> copy = stack.copy();
                 copy.setAmount(toInsert);
 
-                ChemicalStack<?> remaining = ChemicalHelper.insert(handler, copy, settings.getFacing(), Action.EXECUTE, settings.getConnectorType());
+                ChemicalStack<?> remaining = ChemicalHelper.insert(handler, copy, settings.getFacing(), Action.EXECUTE);
 
                 if (remaining.isEmpty() || (!remaining.isEmpty() && copy.getAmount() != remaining.getAmount())) {
                     this.roundRobinOffset = (this.roundRobinOffset + 1) % this.consumers.size();

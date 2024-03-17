@@ -1,9 +1,9 @@
 package terrails.xnetgases.helper;
 
 import mcjty.rftoolsbase.api.xnet.channels.IChannelType;
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 public abstract class BaseChannelModule implements IChannelType {
 
-    public void setupConfig(final ForgeConfigSpec.Builder builder) { }
+    public void setupConfig(final ModConfigSpec.Builder builder) { }
 }

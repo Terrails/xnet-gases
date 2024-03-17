@@ -6,30 +6,27 @@ import mcjty.lib.varia.JSonTools;
 import mcjty.rftoolsbase.api.xnet.gui.IEditorGui;
 import mcjty.rftoolsbase.api.xnet.gui.IndicatorIcon;
 import mekanism.api.chemical.ChemicalStack;
-import mekanism.api.chemical.gas.IGasHandler;
-import mekanism.api.chemical.infuse.IInfusionHandler;
-import mekanism.api.chemical.pigment.IPigmentHandler;
-import mekanism.api.chemical.slurry.ISlurryHandler;
-import mekanism.common.capabilities.Capabilities;
+import mekanism.api.chemical.ChemicalType;
+import mekanism.api.chemical.IChemicalHandler;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import terrails.xnetgases.helper.BaseConnectorSettings;
 import terrails.xnetgases.helper.ModuleEnums.*;
-import terrails.xnetgases.module.chemical.utils.ChemicalHelper;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static terrails.xnetgases.Constants.*;
 
 public class ChemicalConnectorSettings extends BaseConnectorSettings<ChemicalStack<?>> {
-    
+
     private ConnectorMode connectorMode = ConnectorMode.INS;
-    private ChemicalEnums.Type connectorType = ChemicalEnums.Type.GAS;
+
+    private ChemicalType connectorType = ChemicalType.GAS;
 
     @Nullable private Integer priority = 0;
     @Nullable private Integer transferRate = null;
@@ -48,7 +45,7 @@ public class ChemicalConnectorSettings extends BaseConnectorSettings<ChemicalSta
         return this.connectorMode;
     }
 
-    public ChemicalEnums.Type getConnectorType() {
+    public ChemicalType getConnectorType() {
         return this.connectorType;
     }
 
@@ -72,7 +69,7 @@ public class ChemicalConnectorSettings extends BaseConnectorSettings<ChemicalSta
     private int getMaxRate(boolean advanced) {
         return switch (connectorType) {
             case GAS -> advanced ? ChemicalChannelModule.maxGasRateAdvanced.get() : ChemicalChannelModule.maxGasRateNormal.get();
-            case INFUSE -> advanced ? ChemicalChannelModule.maxInfuseRateAdvanced.get() : ChemicalChannelModule.maxInfuseRateNormal.get();
+            case INFUSION -> advanced ? ChemicalChannelModule.maxInfuseRateAdvanced.get() : ChemicalChannelModule.maxInfuseRateNormal.get();
             case PIGMENT -> advanced ? ChemicalChannelModule.maxPigmentRateAdvanced.get() : ChemicalChannelModule.maxPigmentRateNormal.get();
             case SLURRY -> advanced ? ChemicalChannelModule.maxSlurryRateAdvanced.get() : ChemicalChannelModule.maxSlurryRateNormal.get();
         };
@@ -85,33 +82,9 @@ public class ChemicalConnectorSettings extends BaseConnectorSettings<ChemicalSta
     @Nullable
     @Override
     public ChemicalStack<?> getMatcher() {
-        if (!filter.isEmpty()) {
-            switch (connectorType) {
-                case GAS:
-                    if (Capabilities.GAS_HANDLER != null && filter.getCapability(Capabilities.GAS_HANDLER).isPresent()) {
-                        IGasHandler handler = filter.getCapability(Capabilities.GAS_HANDLER).orElseThrow(() -> new IllegalArgumentException("IGasHandler Capability doesn't exist!"));
-                        return handler.getChemicalInTank(0);
-                    }
-                    break;
-                case INFUSE:
-                    if (Capabilities.INFUSION_HANDLER != null && filter.getCapability(Capabilities.INFUSION_HANDLER).isPresent()) {
-                        IInfusionHandler handler = filter.getCapability(Capabilities.INFUSION_HANDLER).orElseThrow(() -> new IllegalArgumentException("IInfusionHandler Capability doesn't exist!"));
-                        return handler.getChemicalInTank(0);
-                    }
-                    break;
-                case PIGMENT:
-                    if (Capabilities.PIGMENT_HANDLER != null && filter.getCapability(Capabilities.PIGMENT_HANDLER).isPresent()) {
-                        IPigmentHandler handler = filter.getCapability(Capabilities.PIGMENT_HANDLER).orElseThrow(() -> new IllegalArgumentException("IPigmentHandler Capability doesn't exist!"));
-                        return handler.getChemicalInTank(0);
-                    }
-                    break;
-                case SLURRY:
-                    if (Capabilities.SLURRY_HANDLER != null && filter.getCapability(Capabilities.SLURRY_HANDLER).isPresent()) {
-                        ISlurryHandler handler = filter.getCapability(Capabilities.SLURRY_HANDLER).orElseThrow(() -> new IllegalArgumentException("ISlurryHandler Capability doesn't exist!"));
-                        return handler.getChemicalInTank(0);
-                    }
-                    break;
-            }
+        IChemicalHandler<?, ?> handler = ChemicalHelper.getChemicalHandler(filter, connectorType);
+        if (handler != null && handler.getTanks() > 0) {
+            return handler.getChemicalInTank(0);
         }
         return null;
     }
@@ -135,7 +108,9 @@ public class ChemicalConnectorSettings extends BaseConnectorSettings<ChemicalSta
     public void update(Map<String, Object> data) {
         super.update(data);
         this.connectorMode = ConnectorMode.byName(((String) data.get(TAG_MODE)));
-        this.connectorType = ChemicalEnums.Type.NAME_MAP.get(((String) data.get(TAG_TYPE)).toUpperCase(Locale.ROOT));
+        this.connectorType = ChemicalType.fromString((String) data.get(TAG_TYPE));
+        this.connectorType = CHEMICAL_NAME_MAP.get(((String) data.get(TAG_TYPE)).toUpperCase(Locale.ROOT));
+
         this.transferRate = (Integer) data.get(TAG_RATE);
         this.minMaxLimit = (Integer) data.get(TAG_MIN_MAX);
 
@@ -166,7 +141,7 @@ public class ChemicalConnectorSettings extends BaseConnectorSettings<ChemicalSta
         gui
                 .nl()
                 .choices(TAG_MODE, "Insert or extract mode", this.connectorMode, ConnectorMode.values())
-                .choices(TAG_TYPE, "Connector type", this.connectorType, ChemicalEnums.Type.values());
+                .choices(TAG_TYPE, "Connector type", this.connectorType, ALLOWED_CHEMICALS.toArray(ChemicalType[]::new));
 
 
         if (this.connectorMode == ConnectorMode.INS) {
@@ -195,7 +170,7 @@ public class ChemicalConnectorSettings extends BaseConnectorSettings<ChemicalSta
         super.readFromNBT(tag);
         this.transferRateRequired = tag.getBoolean(TAG_REQUIRE_RATE);
         this.connectorMode = ConnectorMode.values()[tag.getByte(TAG_MODE)];
-        this.connectorType = ChemicalEnums.Type.values()[tag.getByte(TAG_TYPE)];
+        this.connectorType = ALLOWED_CHEMICALS.get(tag.getByte(TAG_TYPE));
 
         if (tag.contains(TAG_PRIORITY)) {
             this.priority = tag.getInt(TAG_PRIORITY);
@@ -223,7 +198,8 @@ public class ChemicalConnectorSettings extends BaseConnectorSettings<ChemicalSta
         super.writeToNBT(tag);
         tag.putBoolean(TAG_REQUIRE_RATE, this.transferRateRequired);
         tag.putByte(TAG_MODE, (byte) this.connectorMode.ordinal());
-        tag.putByte(TAG_TYPE, (byte) this.connectorType.ordinal());
+        tag.putByte(TAG_TYPE, (byte) ALLOWED_CHEMICALS.indexOf(this.connectorType));
+
         tag.putInt(TAG_SPEED, this.operationSpeed);
 
         if (this.priority != null) tag.putInt(TAG_PRIORITY, this.priority);
@@ -241,7 +217,7 @@ public class ChemicalConnectorSettings extends BaseConnectorSettings<ChemicalSta
     public void readFromJson(JsonObject data) {
         super.readFromJsonInternal(data);
         this.connectorMode = getEnumSafe(data, TAG_MODE, ConnectorMode::byName);
-        this.connectorType = getEnumSafe(data, TAG_TYPE, ChemicalEnums.Type.NAME_MAP::get);
+        this.connectorType = getEnumSafe(data, TAG_TYPE, ChemicalType::fromString);
         this.priority = getIntegerSafe(data, TAG_PRIORITY);
         this.transferRate = getIntegerSafe(data, TAG_RATE);
         this.transferRateRequired = getBoolSafe(data, TAG_REQUIRE_RATE);

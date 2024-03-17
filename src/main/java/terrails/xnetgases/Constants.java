@@ -3,9 +3,14 @@ package terrails.xnetgases;
 import com.google.common.collect.ImmutableSet;
 import mcjty.rftoolsbase.api.xnet.helper.AbstractConnectorSettings;
 import mcjty.xnet.XNet;
+import mekanism.api.chemical.ChemicalType;
 import net.minecraft.resources.ResourceLocation;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class Constants {
 
@@ -26,6 +31,9 @@ public class Constants {
     public static final String TAG_REDSTONE = AbstractConnectorSettings.TAG_RS;
     public static final String TAG_COLOR = AbstractConnectorSettings.TAG_COLOR;
     public static final String TAG_FACING = AbstractConnectorSettings.TAG_FACING;
+
+    public static final List<ChemicalType> ALLOWED_CHEMICALS = List.of(ChemicalType.GAS, ChemicalType.INFUSION, ChemicalType.PIGMENT, ChemicalType.SLURRY);
+    public static final Map<String, ChemicalType> CHEMICAL_NAME_MAP = ALLOWED_CHEMICALS.stream().collect(Collectors.toMap(Enum::name, Function.identity()));
 
     public static final Set<String> INSERT_TAGS = ImmutableSet.of(TAG_MODE, TAG_TYPE, TAG_REDSTONE, TAG_COLOR+"0", TAG_COLOR+"1", TAG_COLOR+"2", TAG_COLOR+"3", TAG_RATE, TAG_MIN_MAX, TAG_PRIORITY, TAG_FILTER, TAG_REQUIRE_RATE);
     public static final Set<String> EXTRACT_TAGS = ImmutableSet.of(TAG_MODE, TAG_TYPE, TAG_REDSTONE, TAG_COLOR+"0", TAG_COLOR+"1", TAG_COLOR+"2", TAG_COLOR+"3", TAG_RATE, TAG_MIN_MAX, TAG_FILTER, TAG_SPEED);
