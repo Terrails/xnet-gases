@@ -7,16 +7,18 @@ import mcjty.rftoolsbase.api.xnet.channels.Color;
 import mcjty.rftoolsbase.api.xnet.gui.IEditorGui;
 import mcjty.rftoolsbase.api.xnet.helper.BaseStringTranslators;
 import mekanism.api.chemical.Chemical;
+import mekanism.api.chemical.ChemicalType;
+import mekanism.api.chemical.IChemicalHandler;
 import mekanism.common.registries.MekanismBlocks;
+import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import terrails.xnetgases.module.chemical.ChemicalEnums;
-import terrails.xnetgases.module.chemical.utils.ChemicalHelper;
+import net.minecraft.world.level.Level;
+import terrails.xnetgases.module.chemical.ChemicalHelper;
 import terrails.xnetgases.module.logic.ChemicalLogicEnums.*;
 
-import javax.annotation.Nullable;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 
 public class ChemicalSensor {
@@ -76,21 +78,25 @@ public class ChemicalSensor {
                 .nl();
     }
 
-    public boolean test(@Nullable BlockEntity be, ChemicalLogicConnectorSettings settings) {
-        ChemicalEnums.Type type = sensorMode.toType();
+    public boolean test(Level level, BlockPos pos, ChemicalLogicConnectorSettings settings) {
+        ChemicalType type = sensorMode.toType();
         if (type == null || !this.filter.is(MekanismBlocks.CREATIVE_CHEMICAL_TANK.asItem())) return false;
 
-        return switch (sensorMode) {
-            case GAS, SLURRY, PIGMENT, INFUSE -> ChemicalHelper.handler(be, settings.getFacing(), type)
-                    .map(handler -> ChemicalHelper.handler(filter, null, type)
-                                    .map(filterHandler -> {
-                                        if (filterHandler.getTanks() <= 0) return false;
-                                        Chemical<?> chemical = filterHandler.getChemicalInTank(0).getType();
-                                        return operator.match(ChemicalHelper.amountInTank(handler, settings.getFacing(), chemical, type), amount);
-                                    }).orElse(filter.isEmpty() && operator.match(ChemicalHelper.amountInTank(handler, settings.getFacing(), type), amount))
-                    ).orElse(false);
-            default -> false;
-        };
+        switch (sensorMode) {
+            case GAS, SLURRY, PIGMENT, INFUSION -> {
+                IChemicalHandler<?, ?> handler = ChemicalHelper.getChemicalHandler(level, pos, settings.getFacing(), type);
+                if (handler != null) {
+                    IChemicalHandler<?, ?> filterHandler = ChemicalHelper.getChemicalHandler(filter, type);
+                    if (filterHandler == null || filterHandler.getTanks() <= 0) {
+                        return false;
+                    }
+
+                    Chemical<?> chemical = filterHandler.getChemicalInTank(0).getType();
+                    return operator.match(ChemicalHelper.amountInTank(handler, settings.getFacing(), chemical), amount);
+                }
+            }
+        }
+        return false;
     }
 
     public void update(Map<String, Object> data) {
@@ -147,7 +153,14 @@ public class ChemicalSensor {
         amount = json.has(amountTag) ? json.get(amountTag).getAsInt() : 0;
         operator = json.has(operatorTag) ? SensorOperator.byName(json.get(operatorTag).getAsString()) : SensorOperator.EQUAL;
         outputColor = json.has(colorTag) ? BaseStringTranslators.getColor(json.get(colorTag).getAsString()) : Color.OFF;
-        sensorMode = json.has(modeTag) ? SensorMode.byName(json.get(modeTag).getAsString()) : SensorMode.OFF;
+        if (json.has(modeTag)) {
+            String modeString = json.get(modeTag).getAsString();
+            if (Objects.equals(modeString, "INFUSE")) { // handle old name
+                sensorMode = SensorMode.INFUSION;
+            } else {
+                sensorMode = SensorMode.byName(json.get(modeTag).getAsString());
+            }
+        } else sensorMode = SensorMode.OFF;
         if (json.has(filterTag)) {
             filter = ChemicalHelper.normalizeStack(JSonTools.jsonToItemStack(json.get(filterTag).getAsJsonObject()), this.sensorMode.toType());
         } else filter = ItemStack.EMPTY;

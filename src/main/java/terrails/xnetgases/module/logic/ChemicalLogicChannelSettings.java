@@ -20,7 +20,6 @@ import terrails.xnetgases.module.logic.ChemicalLogicEnums.*;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 import static terrails.xnetgases.Constants.*;
@@ -89,10 +88,8 @@ public class ChemicalLogicChannelSettings extends DefaultChannelSettings impleme
 
                 // If sense is false the sensor is disabled which means the colors from it will also be disabled
                 if (sense) {
-                    BlockEntity te = level.getBlockEntity(pos);
-
                     for (ChemicalSensor sensor : settings.getSensors()) {
-                        if (sensor.test(te, settings)) {
+                        if (sensor.test(level, pos, settings)) {
                             sensorColors |= 1 << sensor.getOutputColor().ordinal();
                         }
                     }

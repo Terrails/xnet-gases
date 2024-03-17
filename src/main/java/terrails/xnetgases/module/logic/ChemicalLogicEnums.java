@@ -1,6 +1,6 @@
 package terrails.xnetgases.module.logic;
 
-import terrails.xnetgases.module.chemical.ChemicalEnums;
+import mekanism.api.chemical.ChemicalType;
 
 import java.util.Arrays;
 import java.util.Locale;
@@ -22,7 +22,7 @@ public class ChemicalLogicEnums {
     }
 
     public enum SensorMode {
-        OFF, GAS, SLURRY, INFUSE, PIGMENT;
+        OFF, GAS, SLURRY, INFUSION, PIGMENT;
 
         private static final Map<String, SensorMode> NAME_MAP = Arrays.stream(SensorMode.values()).collect(Collectors.toMap(Enum::name, Function.identity()));
 
@@ -30,9 +30,14 @@ public class ChemicalLogicEnums {
             return NAME_MAP.get(name);
         }
 
-        public ChemicalEnums.Type toType() {
-            if (this == OFF) return null;
-            return ChemicalEnums.Type.byName(this.name());
+        public ChemicalType toType() {
+            return switch (this) {
+                case OFF -> null;
+                case GAS -> ChemicalType.GAS;
+                case SLURRY -> ChemicalType.SLURRY;
+                case INFUSION -> ChemicalType.INFUSION;
+                case PIGMENT -> ChemicalType.PIGMENT;
+            };
         }
     }
 
