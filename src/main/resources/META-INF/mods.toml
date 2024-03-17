@@ -1,5 +1,5 @@
 modLoader="javafml"
-loaderVersion="[47,)"
+loaderVersion="[2,)"
 license="MIT"
 issueTrackerURL="https://github.com/Terrails/xnet-gases/issues"
 
@@ -13,26 +13,26 @@ authors="Terrails"
 description=''' A simple addon for XNet that enables the movement of chemicals from Mekanism. '''
 
 [[dependencies.xnetgases]]
-    modId="forge"
-    mandatory=true
-    versionRange="[47,)"
+    modId="neoforge"
+    type="required"
+    versionRange="[20.4,)"
     ordering="NONE"
     side="BOTH"
 [[dependencies.xnetgases]]
     modId="minecraft"
-    mandatory=true
-    versionRange="[1.20.1,)"
+    type="required"
+    versionRange="[1.20.4,)"
     ordering="NONE"
     side="BOTH"
 [[dependencies.xnetgases]]
     modId="mekanism"
-    mandatory=true
-    versionRange="[1.20.1-10,)"
+    type="required"
+    versionRange="[10.5,)"
     ordering="AFTER"
     side="BOTH"
 [[dependencies.xnetgases]]
     modId="xnet"
-    mandatory=true
-    versionRange="[1.20-6,)"
+    type="required"
+    versionRange="[1.20-7,)"
     ordering="AFTER"
     side="BOTH"
