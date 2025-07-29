@@ -127,6 +127,7 @@ public class ChemicalConnectorSettings extends AbstractConnectorSettings {
 
         transferRate = Optional.ofNullable(data.get(TAG_RATE))
                 .map(Integer.class::cast)
+                .flatMap(i -> i == -1 ? Optional.empty() : Optional.of(i))
                 .orElse(null);
 
         transferRateRequired = Optional.ofNullable(data.get(TAG_REQUIRE_RATE))
@@ -135,6 +136,7 @@ public class ChemicalConnectorSettings extends AbstractConnectorSettings {
 
         minMaxLimit = Optional.ofNullable(data.get(TAG_MINMAX))
                 .map(Integer.class::cast)
+                .flatMap(i -> i == -1 ? Optional.empty() : Optional.of(i))
                 .orElse(null);
 
         priority = Optional.ofNullable(data.get(TAG_PRIORITY))
@@ -173,13 +175,13 @@ public class ChemicalConnectorSettings extends AbstractConnectorSettings {
             gui.choices(TAG_SPEED, SPEED_TOOLTIP.i18n(), Integer.toString(operationSpeed), speeds);
         }
         gui.nl();
-        gui.label(RATE_LABEL.i18n()).integer(TAG_RATE, getRateTooltip(), transferRate, 60, maxTransferRate);
+        gui.label(RATE_LABEL.i18n()).integer(TAG_RATE, getRateTooltip(), transferRate, 60, maxTransferRate, -1);
         if (connectorMode == ConnectorMode.INS) {
             gui.shift(5);
             gui.toggle(TAG_REQUIRE_RATE, REQUIRE_INSERT_RATE_LABEL.i18n(), transferRateRequired);
         }
         gui.nl();
-        gui.label((connectorMode == ConnectorMode.EXT ? MIN : MAX).i18n()).integer(TAG_MINMAX, getMinMaxTooltip(), minMaxLimit, 48);
+        gui.label((connectorMode == ConnectorMode.EXT ? MIN : MAX).i18n()).integer(TAG_MINMAX, getMinMaxTooltip(), minMaxLimit, 48, Integer.MAX_VALUE, -1);
         gui.nl();
         gui.label(FILTER_LABEL.i18n()).ghostSlot(TAG_FILTER, matcher.getStack());
     }
