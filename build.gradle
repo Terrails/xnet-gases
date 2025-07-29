@@ -122,7 +122,6 @@ tasks.register('publishProduction') {
 }
 
 modrinth {
-    debugMode = true
     token = System.getenv("MODRINTH_TOKEN")
     projectId = "${rootProject.modrinth_id}"
     versionNumber = "${project.version}"
@@ -136,13 +135,11 @@ modrinth {
     }
     changelog = file("CHANGELOG.md").text
     additionalFiles = [tasks.sourcesJar.getArchiveFile().get()]
-
 }
 
 import net.darkhax.curseforgegradle.TaskPublishCurseForge
 
 tasks.register('publishCurseForge', TaskPublishCurseForge) {
-    debugMode = true
     apiToken = System.getenv("CURSEFORGE_TOKEN")
     disableVersionDetection()
 
