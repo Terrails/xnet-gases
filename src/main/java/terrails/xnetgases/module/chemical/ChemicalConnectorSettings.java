@@ -13,6 +13,7 @@ import mcjty.rftoolsbase.api.xnet.gui.IEditorGui;
 import mcjty.rftoolsbase.api.xnet.gui.IndicatorIcon;
 import mcjty.rftoolsbase.api.xnet.helper.AbstractConnectorSettings;
 import mcjty.xnet.apiimpl.Constants;
+import mcjty.xnet.modules.cables.blocks.AdvancedConnectorTileEntity;
 
 import terrails.xnetgases.XNetGases;
 import terrails.xnetgases.module.ChemicalMatcher;
@@ -22,12 +23,14 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.entity.BlockEntity;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import static mcjty.xnet.apiimpl.Constants.*;
 import static mcjty.xnet.utils.I18nConstants.*;
@@ -104,9 +107,15 @@ public class ChemicalConnectorSettings extends AbstractConnectorSettings {
         return minMaxLimit;
     }
 
-    public Integer getTransferRate() {
-        // 'advanced' is always false here, so default to non-advanced speed
-        return Optional.ofNullable(transferRate).orElseGet(XNetGases.maxRateNormal);
+    public Integer getTransferRate(BlockEntity connectorEntity) {
+        Supplier<Integer> maxValue;
+        if (connectorEntity instanceof AdvancedConnectorTileEntity) {
+            maxValue = XNetGases.maxRateAdvanced;
+        } else {
+            maxValue = XNetGases.maxRateNormal;
+        }
+
+        return Optional.ofNullable(transferRate).orElseGet(maxValue);
     }
 
     public boolean isTransferRateRequired() {

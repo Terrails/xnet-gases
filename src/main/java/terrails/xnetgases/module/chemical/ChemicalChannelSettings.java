@@ -106,6 +106,7 @@ public class ChemicalChannelSettings extends DefaultChannelSettings implements I
         Level level = context.getControllerWorld();
         for (ConnectedEntity<ChemicalConnectorSettings> extractor : extractors) {
             ChemicalConnectorSettings settings = extractor.settings();
+            BlockEntity connectorEntity = extractor.getConnectorEntity();
 
             if (delay % settings.getOperationSpeed() != 0) continue;
             if (!LevelTools.isLoaded(level, extractor.getBlockPos())) continue;
@@ -120,16 +121,16 @@ public class ChemicalChannelSettings extends DefaultChannelSettings implements I
             );
             if (handler == null) continue;
 
-            tickChemicalHandler(context, settings, handler);
+            tickChemicalHandler(context, settings, connectorEntity, handler);
         }
     }
 
-    private void tickChemicalHandler(IControllerContext context, ChemicalConnectorSettings settings, IChemicalHandler handler) {
+    private void tickChemicalHandler(IControllerContext context, ChemicalConnectorSettings settings, BlockEntity connectorEntity, IChemicalHandler handler) {
         if (!context.checkAndConsumeRF(Config.controllerChannelRFT.get())) return;
 
         long amount = settings.getMatcher().amountInTank(handler, settings.getFacing());
         if (amount <= 0) return;
-        long toExtract = settings.getTransferRate();
+        long toExtract = settings.getTransferRate(connectorEntity);
         Integer count = settings.getMinMaxLimit();
         if (count != null) {
             long canExtract = amount - count;
@@ -164,6 +165,7 @@ public class ChemicalChannelSettings extends DefaultChannelSettings implements I
             int i = (j + currentRoundRobinOffset) % consumers.size();
             ConnectedEntity<ChemicalConnectorSettings> consumer = consumers.get(i);
             ChemicalConnectorSettings settings = consumer.settings();
+            BlockEntity connectorEntity = consumer.getConnectorEntity();
 
             if (!settings.getMatcher().test(stack)) continue;
             if (!LevelTools.isLoaded(level, consumer.getBlockPos())) continue;
@@ -178,7 +180,7 @@ public class ChemicalChannelSettings extends DefaultChannelSettings implements I
             );
             if (handler == null) continue;
 
-            long toInsert = Math.min(settings.getTransferRate(), amount);
+            long toInsert = Math.min(settings.getTransferRate(connectorEntity), amount);
 
             Integer count = settings.getMinMaxLimit();
             if (count != null) {
@@ -188,7 +190,7 @@ public class ChemicalChannelSettings extends DefaultChannelSettings implements I
                 toInsert = Math.min(toInsert, canInsert);
             }
 
-            if (settings.isTransferRateRequired() && settings.getTransferRate() > toInsert) {
+            if (settings.isTransferRateRequired() && settings.getTransferRate(connectorEntity) > toInsert) {
                 continue;
             }
 
