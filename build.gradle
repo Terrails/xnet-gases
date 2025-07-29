@@ -115,34 +115,6 @@ idea {
     }
 }
 
-tasks.register('printChangelog') {
-    doLast {
-        println(fetchChangelog())
-    }
-}
-
-ext.fetchChangelog = {
-    def branch = "git rev-parse --abbrev-ref HEAD".execute().in.text.trim()
-    if (branch.isBlank() || branch == "HEAD") {
-        throw new GradleException("Branch name could not be fetched.")
-    }
-
-    def repoUrl = "https://github.com/Terrails/xnet-gases"
-    def changes = new StringBuilder("Latest changes ([See all](${repoUrl}/commits/${branch}))\n---")
-    def log = "git log --max-count=30 --no-merges --pretty=format:\"* %s ([%h](${repoUrl}/commit/%H))\"".execute()
-    log.in.eachLine { line ->
-        if (!line.startsWithIgnoreCase("* bump")) { // version change commits should be ignored
-            changes << "\n${line}"
-        }
-    }
-
-    if (log.waitFor() == 0) {
-        return changes.toString()
-    } else {
-        throw new GradleException("Received an error while executing git log.")
-    }
-}
-
 tasks.build.mustRunAfter(tasks.clean)
 tasks.register('publishProduction') {
     dependsOn([tasks.clean, tasks.build])
@@ -150,6 +122,7 @@ tasks.register('publishProduction') {
 }
 
 modrinth {
+    debugMode = true
     token = System.getenv("MODRINTH_TOKEN")
     projectId = "${rootProject.modrinth_id}"
     versionNumber = "${project.version}"
@@ -161,20 +134,22 @@ modrinth {
         required.project "xnet"
         required.project "mekanism"
     }
-    changelog = fetchChangelog()
+    changelog = file("CHANGELOG.md").text
     additionalFiles = [tasks.sourcesJar.getArchiveFile().get()]
+
 }
 
 import net.darkhax.curseforgegradle.TaskPublishCurseForge
 
 tasks.register('publishCurseForge', TaskPublishCurseForge) {
+    debugMode = true
     apiToken = System.getenv("CURSEFORGE_TOKEN")
     disableVersionDetection()
 
     def mainFile = upload(rootProject.curseforge_id, tasks.jar.getArchiveFile().get())
     mainFile.displayName = "${rootProject.minecraft_version}-v${project.version}"
     mainFile.releaseType = "release"
-    mainFile.changelog = fetchChangelog()
+    mainFile.changelog = file("CHANGELOG.md").text
     mainFile.changelogType = "markdown"
     mainFile.addGameVersion(rootProject.minecraft_version)
     mainFile.addModLoader("neoforge")
