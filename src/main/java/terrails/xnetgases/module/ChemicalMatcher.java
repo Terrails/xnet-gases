@@ -7,6 +7,7 @@ import mekanism.common.tier.ChemicalTankTier;
 import mekanism.common.util.ChemicalUtil;
 
 import net.minecraft.core.Direction;
+import net.minecraft.core.Holder;
 import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nullable;
@@ -17,7 +18,7 @@ import java.util.function.Predicate;
 
 /**
  * If the item is {@link ItemStack#EMPTY} or does not have {@link Capabilities#CHEMICAL}, the filter does nothing and allows all chemicals.
- * If the item has the capability, but {@link Chemical#isEmptyType()}, the filter is active, but always false.
+ * If the item has the capability, but {@link ChemicalStack#isEmpty()}, the filter is active, but always false.
  * If the item has the capability and the chemical is not empty, the filter is active for the chemical.
  */
 public class ChemicalMatcher implements Predicate<ChemicalStack> {
@@ -27,19 +28,16 @@ public class ChemicalMatcher implements Predicate<ChemicalStack> {
 
     public static ChemicalMatcher from(ItemStack stack) {
         if (stack != null && !stack.isEmpty()) {
-            Chemical chemical = Optional.ofNullable(Capabilities.CHEMICAL.getCapability(stack))
+            return Optional.ofNullable(Capabilities.CHEMICAL.getCapability(stack))
                     .map(handler -> handler.getChemicalInTank(0))
-                    .map(ChemicalStack::getChemical)
-                    .orElse(null);
-
-            if (chemical != null) {
-                if (chemical.isEmptyType()) {
-                    return new ChemicalMatcher(MekanismBlocks.CREATIVE_CHEMICAL_TANK.getItemStack(), ALWAYS_FALSE);
-                } else {
-                    return new ChemicalMatcher(ChemicalUtil.getFullChemicalTank(ChemicalTankTier.CREATIVE, chemical), s -> !s.isEmpty() && s.is(chemical));
-                }
-            }
-
+                    .map(chemicalStack -> {
+                        if (chemicalStack.isEmpty()) {
+                            return new ChemicalMatcher(new ItemStack(MekanismBlocks.CREATIVE_CHEMICAL_TANK), ALWAYS_FALSE);
+                        } else {
+                            Holder<Chemical> chemical = chemicalStack.getChemicalHolder();
+                            return new ChemicalMatcher(ChemicalUtil.getFullChemicalTank(ChemicalTankTier.CREATIVE, chemical), s -> !s.isEmpty() && s.is(chemical));
+                        }
+                    }).orElse(EMPTY);
         }
         return EMPTY;
     }
