@@ -138,19 +138,21 @@ public class ChemicalChannelSettings extends DefaultChannelSettings implements I
             toExtract = Math.min(toExtract, canExtract);
         }
 
-        while (true) {
-            ChemicalStack extracted = handler.extractChemical(toExtract, Action.SIMULATE);
+        int tankCount = handler.getChemicalTanks();
+        for (int tank = 0; tank < tankCount && toExtract > 0; tank++) {
+            ChemicalStack simulated = handler.extractChemical(tank, toExtract, Action.SIMULATE);
 
-            if (!settings.getMatcher().test(extracted)) {
-                break;
+            if (!settings.getMatcher().test(simulated)) {
+                continue;
             }
 
-            toExtract = extracted.getAmount();
-            long remaining = insertChemical(context, extracted);
-            toExtract -= remaining;
-            if (remaining != toExtract) {
-                handler.extractChemical(toExtract, Action.EXECUTE);
-                break;
+            long availableInTank = simulated.getAmount();
+            long remaining = insertChemical(context, simulated);
+            long transferredAmount = availableInTank - remaining;
+
+            if (transferredAmount > 0) {
+                handler.extractChemical(tank, transferredAmount, Action.EXECUTE);
+                toExtract -= transferredAmount;
             }
         }
     }
